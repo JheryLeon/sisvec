@@ -115,13 +115,20 @@ def register():
         db.session.add(user)
         db.session.commit()
 
-        enviar_verificacion_email(user, token)
+        sent = enviar_verificacion_email(user, token)
 
-        flash(
-            "Cuenta creada. Te enviamos un email para verificar tu dirección. "
-            "Revisá tu bandeja de entrada (y la carpeta de spam).",
-            "success",
-        )
+        if sent:
+            flash(
+                "Cuenta creada. Te enviamos un email para verificar tu dirección. "
+                "Revisá tu bandeja de entrada (y la carpeta de spam).",
+                "success",
+            )
+        else:
+            flash(
+                "Cuenta creada, pero NO se pudo enviar el email de verificación. "
+                "Contactá al administrador o revisá la configuración de email.",
+                "warning",
+            )
         return redirect(url_for("auth.login"))
 
     return render_template("register.html", form=form)
@@ -220,6 +227,27 @@ def logout():
     resp.set_cookie("session_token", "", expires=0)
     flash("Has cerrado sesión.", "info")
     return resp
+
+
+@auth_bp.route("/test-email")
+@login_required
+def test_email():
+    if not current_user.es_admin():
+        return jsonify({"error": "Solo admin"}), 403
+
+    from app.utils.email_sender import enviar_email
+    success = enviar_email(current_user.email, "Test SISVEC", "<h2>Correo de prueba</h2><p>Si ves esto, el email funciona.</p>")
+
+    config_info = {
+        "MAIL_SERVER": current_app.config.get("MAIL_SERVER"),
+        "MAIL_PORT": current_app.config.get("MAIL_PORT"),
+        "MAIL_USERNAME": current_app.config.get("MAIL_USERNAME"),
+        "MAIL_FROM": current_app.config.get("MAIL_FROM"),
+        "MAIL_PASSWORD_SET": bool(current_app.config.get("MAIL_PASSWORD")),
+        "APP_URL": current_app.config.get("APP_URL"),
+    }
+
+    return jsonify({"success": success, "config": config_info})
 
 
 @auth_bp.route("/api/usuario", methods=["GET"])
