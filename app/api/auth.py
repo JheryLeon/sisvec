@@ -83,7 +83,7 @@ def register():
 
         existing = Usuario.query.filter_by(email=form.email.data.strip().lower()).first()
         if existing:
-            flash("Este email ya está registrado.", "error")
+            flash("Este email ya está registrado. Iniciá sesión o recuperá tu contraseña.", "warning")
             return render_template("register.html", form=form)
 
         from app.models import Rol
