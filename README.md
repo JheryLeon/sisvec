@@ -79,7 +79,7 @@ Desde el dashboard de Render:
 | `DATABASE_URL` | Pegar la Internal Database URL del paso 2 |
 | `FLASK_ENV` | `production` |
 | `SECRET_KEY` | Una clave aleatoria segura |
-| `APP_URL` | `https://sisvec.onrender.com` |
+| `APP_URL` | `https://seguridadvecinal.onrender.com` |
 | `MAIL_SERVER` | `smtp.gmail.com` |
 | `MAIL_USERNAME` | Tu correo Gmail |
 | `MAIL_PASSWORD` | Contraseña de aplicación de Gmail |

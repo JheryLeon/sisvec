@@ -9,6 +9,8 @@ PG_URI = os.environ.get(
     "DATABASE_URL",
     "postgresql://postgres:1234@localhost:5432/seguridad_vecinal2",
 )
+if PG_URI and PG_URI.startswith("postgres://"):
+    PG_URI = PG_URI.replace("postgres://", "postgresql://", 1)
 
 
 class Config:
