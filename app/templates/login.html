@@ -344,17 +344,18 @@
                             </a>
                         </div>
 
-                        {% if unverified_email %}
-                        <div class="text-center mt-2 fade-in-item">
-                            <form method="POST" action="{{ url_for('auth.resend_verification') }}" style="display:inline;">
-                                <input type="hidden" name="email" value="{{ unverified_email }}">
-                                <button type="submit" class="btn btn-sm btn-link text-decoration-none small" style="color: #ffc107;">
-                                    <i class="bi bi-envelope-arrow-up"></i> Reenviar verificacion
-                                </button>
-                            </form>
-                        </div>
-                        {% endif %}
                     </form>
+
+                    {% if unverified_email %}
+                    <div class="text-center mt-2 fade-in-item">
+                        <form method="POST" action="{{ url_for('auth.resend_verification') }}">
+                            <input type="hidden" name="email" value="{{ unverified_email }}">
+                            <button type="submit" class="btn btn-sm btn-link text-decoration-none small" style="color: #ffc107;">
+                                <i class="bi bi-envelope-arrow-up"></i> Reenviar verificacion
+                            </button>
+                        </form>
+                    </div>
+                    {% endif %}
 
                     <a href="{{ url_for('auth.register') }}" class="btn btn-outline-light w-100 mt-3 fade-in-item">Crear cuenta</a>
                 </div>
