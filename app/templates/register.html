@@ -1,0 +1,560 @@
+{% extends "base.html" %}
+{% block title %}Crear Cuenta - SEGURIDAD VECINAL{% endblock %}
+{% block content_public %}
+<style>
+    .register-bg {
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        background: linear-gradient(135deg, #070c0c 0%, #0a1212 50%, #0d1817 100%);
+        position: relative;
+        overflow: hidden;
+    }
+
+    .btn-back {
+        position: absolute;
+        top: 1.5rem;
+        left: 1.5rem;
+        color: rgba(255,255,255,0.5);
+        text-decoration: none;
+        font-size: 0.9rem;
+        transition: all 0.3s;
+        z-index: 10;
+    }
+    .btn-back:hover {
+        color: #14b8a6;
+        transform: translateX(-3px);
+    }
+
+    .tech-grid {
+        position: absolute;
+        inset: 0;
+        background-image:
+            linear-gradient(rgba(15,118,110,0.04) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(15,118,110,0.04) 1px, transparent 1px);
+        background-size: 60px 60px;
+        pointer-events: none;
+        z-index: 0;
+        animation: gridScroll 20s linear infinite;
+    }
+
+    @keyframes gridScroll {
+        0% { transform: translate(0, 0); }
+        100% { transform: translate(60px, 60px); }
+    }
+
+    .register-particle {
+        position: absolute;
+        width: 4px;
+        height: 4px;
+        background: rgba(15,118,110,0.35);
+        border-radius: 50%;
+        animation: float linear infinite;
+        pointer-events: none;
+    }
+
+    @keyframes float {
+        0% { transform: translateY(100vh) rotate(0deg); opacity: 0; }
+        10% { opacity: 1; }
+        90% { opacity: 1; }
+        100% { transform: translateY(-10vh) rotate(720deg); opacity: 0; }
+    }
+
+    .glow-circle {
+        position: absolute;
+        width: 500px;
+        height: 500px;
+        border-radius: 50%;
+        background: radial-gradient(circle, rgba(15,118,110,0.08) 0%, transparent 70%);
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        animation: pulseGlow 4s ease-in-out infinite;
+        pointer-events: none;
+        z-index: 0;
+    }
+
+    @keyframes pulseGlow {
+        0%, 100% { transform: translate(-50%, -50%) scale(1); opacity: 0.5; }
+        50% { transform: translate(-50%, -50%) scale(1.3); opacity: 1; }
+    }
+
+    .glass-card {
+        background: rgba(255,255,255,0.03);
+        backdrop-filter: blur(24px);
+        -webkit-backdrop-filter: blur(24px);
+        border: 1px solid rgba(255,255,255,0.06);
+        border-radius: 20px;
+        padding: 2.5rem 2rem;
+        box-shadow:
+            0 8px 32px rgba(0,0,0,0.3),
+            0 0 80px rgba(15,118,110,0.04);
+        transition: all 0.4s ease;
+        position: relative;
+        z-index: 1;
+    }
+
+    .glass-card:hover {
+        transform: translateY(-3px);
+        box-shadow:
+            0 12px 48px rgba(0,0,0,0.4),
+            0 0 100px rgba(15,118,110,0.06);
+    }
+
+    .logo-glow {
+        display: inline-block;
+        animation: logoPulse 3s ease-in-out infinite;
+    }
+
+    @keyframes logoPulse {
+        0%, 100% { filter: drop-shadow(0 0 10px rgba(15,118,110,0.3)); }
+        50% { filter: drop-shadow(0 0 25px rgba(15,118,110,0.6)); }
+    }
+
+    .floating-input {
+        position: relative;
+        margin-bottom: 1.2rem;
+    }
+
+    .floating-input .floating-control {
+        width: 100%;
+        padding: 1.2rem 0.75rem 0.5rem;
+        background: transparent;
+        border: none;
+        border-bottom: 1px solid rgba(255,255,255,0.12);
+        outline: none;
+        color: #fff;
+        font-size: 0.95rem;
+        transition: border-color 0.3s;
+        border-radius: 0;
+    }
+
+    .floating-input .floating-control:focus {
+        border-bottom-color: rgba(255,255,255,0.2);
+        box-shadow: none;
+    }
+
+    .floating-input .floating-control.is-invalid {
+        border-bottom-color: #dc3545;
+    }
+
+    .floating-input .floating-label {
+        position: absolute;
+        left: 0.75rem;
+        top: 1.15rem;
+        color: rgba(255,255,255,0.4);
+        transition: all 0.25s ease;
+        pointer-events: none;
+        font-size: 0.9rem;
+        margin: 0;
+        font-weight: 400;
+    }
+
+    .floating-input .floating-control:focus ~ .floating-label,
+    .floating-input .floating-control:not(:placeholder-shown) ~ .floating-label {
+        top: 0;
+        font-size: 0.7rem;
+        color: #14b8a6;
+    }
+
+    .floating-input .floating-control.is-invalid ~ .floating-label {
+        color: #dc3545;
+    }
+
+    .floating-input .input-line {
+        position: absolute;
+        bottom: 0;
+        left: 50%;
+        width: 0;
+        height: 2px;
+        background: #0f766e;
+        transition: all 0.3s ease;
+    }
+
+    .floating-input .floating-control:focus ~ .input-line {
+        left: 0;
+        width: 100%;
+    }
+
+    .floating-input .floating-control.is-invalid ~ .input-line {
+        background: #dc3545;
+    }
+
+    .floating-input .invalid-feedback {
+        display: block;
+        font-size: 0.7rem;
+        color: #dc3545;
+        margin-top: 0.2rem;
+        padding-left: 0.25rem;
+    }
+
+    .password-strength {
+        height: 3px;
+        border-radius: 2px;
+        background: rgba(255,255,255,0.08);
+        overflow: hidden;
+        margin-top: 0.4rem;
+    }
+
+    .strength-bar {
+        height: 100%;
+        width: 0;
+        border-radius: 2px;
+        transition: all 0.3s ease;
+    }
+
+    .btn-gradient {
+        position: relative;
+        overflow: hidden;
+        padding: 0.85rem 1.5rem;
+        border: none;
+        border-radius: 50px;
+        background: linear-gradient(135deg, #0f766e, #14b8a6, #0f766e);
+        background-size: 200% 200%;
+        animation: gradientShift 3s ease infinite;
+        color: #000;
+        font-weight: 700;
+        font-size: 0.95rem;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        margin-top: 0.5rem;
+    }
+
+    @keyframes gradientShift {
+        0% { background-position: 0% 50%; }
+        50% { background-position: 100% 50%; }
+        100% { background-position: 0% 50%; }
+    }
+
+    .btn-gradient:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(15,118,110,0.25);
+    }
+
+    .btn-gradient:active {
+        transform: translateY(0);
+    }
+
+    .btn-gradient .ripple {
+        position: absolute;
+        border-radius: 50%;
+        background: rgba(255,255,255,0.35);
+        transform: scale(0);
+        animation: rippleEffect 0.6s ease-out;
+        pointer-events: none;
+    }
+
+    @keyframes rippleEffect {
+        to { transform: scale(4); opacity: 0; }
+    }
+
+    .btn-outline-light {
+        border-radius: 50px;
+        padding: 0.7rem 1.5rem;
+        font-size: 0.85rem;
+        transition: all 0.3s;
+        border-color: rgba(255,255,255,0.2);
+        color: rgba(255,255,255,0.7);
+    }
+
+    .btn-outline-light:hover {
+        background: rgba(255,255,255,0.05);
+        border-color: rgba(255,255,255,0.3);
+        color: #fff;
+    }
+
+    .fade-in-item {
+        opacity: 0;
+        transform: translateY(15px);
+        animation: fadeInUp 0.5s ease forwards;
+    }
+
+    .fade-in-item:nth-child(1) { animation-delay: 0.05s; }
+    .fade-in-item:nth-child(2) { animation-delay: 0.15s; }
+    .fade-in-item:nth-child(3) { animation-delay: 0.25s; }
+    .fade-in-item:nth-child(4) { animation-delay: 0.35s; }
+    .fade-in-item:nth-child(5) { animation-delay: 0.45s; }
+    .fade-in-item:nth-child(6) { animation-delay: 0.55s; }
+    .fade-in-item:nth-child(7) { animation-delay: 0.60s; }
+    .fade-in-item:nth-child(8) { animation-delay: 0.65s; }
+    .fade-in-item:nth-child(9) { animation-delay: 0.70s; }
+
+    .floating-select {
+        width: 100%;
+        padding: 1.2rem 0.75rem 0.5rem;
+        background: rgba(255,255,255,0.04);
+        border: none;
+        border-bottom: 1px solid rgba(255,255,255,0.12);
+        outline: none;
+        color: #fff;
+        font-size: 0.95rem;
+        transition: border-color 0.3s;
+        border-radius: 0;
+        appearance: none;
+        -webkit-appearance: none;
+        cursor: pointer;
+    }
+    .floating-select:focus {
+        border-bottom-color: rgba(255,255,255,0.2);
+    }
+    .floating-select option {
+        background: #1a1a2e;
+        color: #fff;
+    }
+    .select-arrow {
+        position: absolute;
+        right: 0.75rem;
+        top: 50%;
+        transform: translateY(-50%);
+        color: rgba(255,255,255,0.3);
+        pointer-events: none;
+        font-size: 0.7rem;
+        transition: transform 0.3s;
+    }
+    .floating-input .floating-select:focus ~ .select-arrow {
+        transform: translateY(-50%) rotate(180deg);
+    }
+
+    .file-zone {
+        position: relative;
+        border: 1px dashed rgba(255,255,255,0.15);
+        border-radius: 12px;
+        padding: 1rem;
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.3s;
+        background: rgba(255,255,255,0.02);
+    }
+    .file-zone:hover {
+        border-color: #0f766e;
+        background: rgba(15,118,110,0.05);
+    }
+    .file-zone.has-file {
+        border-color: #0f766e;
+        border-style: solid;
+    }
+    .file-zone input[type="file"] {
+        position: absolute;
+        inset: 0;
+        opacity: 0;
+        cursor: pointer;
+    }
+    .file-zone .file-icon {
+        font-size: 1.5rem;
+        color: rgba(255,255,255,0.25);
+        display: block;
+        margin-bottom: 0.25rem;
+    }
+    .file-zone .file-text {
+        font-size: 0.75rem;
+        color: rgba(255,255,255,0.35);
+    }
+    .file-zone .file-preview {
+        display: none;
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        object-fit: cover;
+        margin: 0 auto 0.5rem;
+        border: 2px solid rgba(15,118,110,0.3);
+    }
+    .file-zone.has-file .file-icon,
+    .file-zone.has-file .file-text { display: none; }
+    .file-zone.has-file .file-preview { display: block; }
+
+    @keyframes fadeInUp {
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    @media (max-width: 576px) {
+        .glass-card { padding: 1.8rem 1.2rem; border-radius: 16px; margin: 0 0.5rem; }
+        .btn-back { top: 1rem; left: 1rem; font-size: 0.8rem; }
+    }
+</style>
+
+<div class="register-bg">
+    <a href="{{ url_for('routes.index') }}" class="btn-back">
+        <i class="bi bi-arrow-left me-1"></i> Volver al inicio
+    </a>
+    <div class="tech-grid"></div>
+    <div id="register-particles"></div>
+    <div class="glow-circle"></div>
+
+    <div class="container" style="position: relative; z-index: 2;">
+        <div class="row justify-content-center">
+            <div class="col-11 col-sm-10 col-md-5 col-lg-4">
+                <div class="glass-card">
+                    <div class="text-center mb-3 fade-in-item">
+                        <div class="logo-glow">
+                            <i class="bi bi-shield-check" style="font-size: 2.8rem; color: #14b8a6;"></i>
+                        </div>
+                        <h4 class="text-white mt-2" style="letter-spacing: 3px; font-weight: 700; font-size: 0.9rem;">SEGURIDAD VECINAL</h4>
+                    </div>
+
+                    <p class="text-center text-white-50 fade-in-item" style="font-size: 0.8rem; margin-bottom: 1.5rem; letter-spacing: 1px;">CREAR CUENTA</p>
+
+                    <form method="POST" action="{{ url_for('auth.register') }}" enctype="multipart/form-data">
+                        {{ form.hidden_tag() }}
+
+                        <div class="floating-input fade-in-item">
+                            {{ form.nombre(class="floating-control" + (" is-invalid" if form.nombre.errors else ""), placeholder=" ") }}
+                            {{ form.nombre.label(class="floating-label") }}
+                            <div class="input-line"></div>
+                            {% for error in form.nombre.errors %}
+                                <div class="invalid-feedback">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+
+                        <div class="floating-input fade-in-item">
+                            {{ form.email(class="floating-control" + (" is-invalid" if form.email.errors else ""), placeholder=" ") }}
+                            {{ form.email.label(class="floating-label") }}
+                            <div class="input-line"></div>
+                            {% for error in form.email.errors %}
+                                <div class="invalid-feedback">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+
+                        <div class="floating-input fade-in-item">
+                            {{ form.password(class="floating-control" + (" is-invalid" if form.password.errors else ""), placeholder=" ", id="register-password") }}
+                            {{ form.password.label(class="floating-label") }}
+                            <div class="input-line"></div>
+                            <div class="password-strength">
+                                <div class="strength-bar" id="strength-bar"></div>
+                            </div>
+                            {% for error in form.password.errors %}
+                                <div class="invalid-feedback">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+
+                        <div class="floating-input fade-in-item">
+                            {{ form.confirm_password(class="floating-control" + (" is-invalid" if form.confirm_password.errors else ""), placeholder=" ") }}
+                            {{ form.confirm_password.label(class="floating-label") }}
+                            <div class="input-line"></div>
+                            {% for error in form.confirm_password.errors %}
+                                <div class="invalid-feedback">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+
+                        <div class="floating-input fade-in-item">
+                            {{ form.telefono(class="floating-control" + (" is-invalid" if form.telefono.errors else ""), placeholder=" ") }}
+                            {{ form.telefono.label(class="floating-label") }}
+                            <div class="input-line"></div>
+                            {% for error in form.telefono.errors %}
+                                <div class="invalid-feedback">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+
+                        <div class="floating-input fade-in-item">
+                            {{ form.barrio_id(class="floating-select" + (" is-invalid" if form.barrio_id.errors else "")) }}
+                            <label class="floating-label" style="top:0;font-size:0.7rem;color:#0f766e;">Barrio</label>
+                            <span class="select-arrow"><i class="bi bi-chevron-down"></i></span>
+                            {% for error in form.barrio_id.errors %}
+                                <div class="invalid-feedback">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+
+                        <div class="fade-in-item">
+                            <div class="file-zone" id="file-zone">
+                                <img class="file-preview" id="file-preview" src="" alt="Preview">
+                                <span class="file-icon"><i class="bi bi-camera"></i></span>
+                                <span class="file-text">Foto de perfil (opcional)</span>
+                                {{ form.foto(class="file-input", id="foto-input", accept="image/*") }}
+                            </div>
+                            {% for error in form.foto.errors %}
+                                <div class="invalid-feedback" style="display:block;">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+
+                        <button type="submit" class="btn-gradient w-100 fade-in-item" id="register-btn">
+                            <span>Crear Cuenta</span>
+                        </button>
+                    </form>
+
+                    <a href="{{ url_for('auth.login') }}" class="btn btn-outline-light w-100 mt-3 fade-in-item">Iniciar sesión</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function crearParticulasRegister() {
+        var container = document.getElementById('register-particles');
+        for (var i = 0; i < 15; i++) {
+            var p = document.createElement('div');
+            p.className = 'register-particle';
+            p.style.left = Math.random() * 100 + '%';
+            p.style.width = p.style.height = (2 + Math.random() * 3) + 'px';
+            p.style.animationDuration = (12 + Math.random() * 20) + 's';
+            p.style.animationDelay = (Math.random() * 15) + 's';
+            container.appendChild(p);
+        }
+    }
+
+    function initFotoPreview() {
+        var input = document.getElementById('foto-input');
+        var zone = document.getElementById('file-zone');
+        var preview = document.getElementById('file-preview');
+        if (!input || !zone || !preview) return;
+        input.addEventListener('change', function() {
+            var file = this.files[0];
+            if (file) {
+                var reader = new FileReader();
+                reader.onload = function(e) {
+                    preview.src = e.target.result;
+                    zone.classList.add('has-file');
+                };
+                reader.readAsDataURL(file);
+            } else {
+                zone.classList.remove('has-file');
+                preview.src = '';
+            }
+        });
+    }
+
+    function initPasswordStrength() {
+        var pwdInput = document.getElementById('register-password');
+        var bar = document.getElementById('strength-bar');
+        if (!pwdInput || !bar) return;
+
+        pwdInput.addEventListener('input', function() {
+            var score = 0;
+            var pwd = this.value;
+
+            if (pwd.length >= 6) score++;
+            if (pwd.length >= 10) score++;
+            if (/[A-Z]/.test(pwd)) score++;
+            if (/[0-9]/.test(pwd)) score++;
+            if (/[^A-Za-z0-9]/.test(pwd)) score++;
+
+            var width = (score / 5) * 100;
+            var color = '#dc3545';
+            if (score >= 4) color = '#00e676';
+            else if (score >= 2) color = '#ffc107';
+
+            bar.style.width = width + '%';
+            bar.style.background = color;
+        });
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        crearParticulasRegister();
+        initPasswordStrength();
+        initFotoPreview();
+
+        var btn = document.getElementById('register-btn');
+        if (btn) {
+            btn.addEventListener('click', function(e) {
+                var ripple = document.createElement('span');
+                ripple.className = 'ripple';
+                var rect = this.getBoundingClientRect();
+                ripple.style.left = (e.clientX - rect.left) + 'px';
+                ripple.style.top = (e.clientY - rect.top) + 'px';
+                ripple.style.width = ripple.style.height = '20px';
+                this.appendChild(ripple);
+                setTimeout(function() { ripple.remove(); }, 600);
+            });
+        }
+    });
+</script>
+{% endblock %}

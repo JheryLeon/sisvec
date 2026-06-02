@@ -1,0 +1,696 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}SEGURIDAD VECINAL{% endblock %}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.2/font/bootstrap-icons.css" rel="stylesheet">
+    <link href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" rel="stylesheet">
+    <link href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" rel="stylesheet">
+    <link href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" rel="stylesheet">
+    <style>
+        :root {
+            --bs-primary: #c9775e;
+            --color-seguro: #0f766e;
+            --color-alerta: #dc3545;
+            --color-riesgo-medio: #ffc107;
+            --color-info: #0d6efd;
+            --bg-body: #f7f3ed;
+            --bg-card: #ffffff;
+            --bg-sidebar: #faf7f2;
+            --bg-topbar: #faf7f2;
+            --bg-offcanvas: #faf7f2;
+            --text-primary: #2d221c;
+            --text-muted: #8c7c72;
+            --text-sidebar: #6b5b52;
+            --text-sidebar-hover: #2d221c;
+            --text-sidebar-active: #c9775e;
+            --sidebar-active-bg: rgba(201,119,94,0.1);
+            --border-color: #e0d6cc;
+            --border-strong: #cdc0b4;
+            --shadow-card: 0 2px 10px rgba(0,0,0,0.06);
+            --input-bg: #ffffff;
+            --input-text: #2d221c;
+            --input-border: #d4c9be;
+            --btn-close-filter: none;
+            --alert-bg: transparent;
+            --alert-text: inherit;
+            --sidebar-accent: #c9775e;
+            --topbar-accent: #c9775e;
+            --accent-light: #e8a38c;
+            --accent-warm: #b86545;
+            --accent-glow: rgba(201,119,94,0.12);
+            --bg-dash: linear-gradient(135deg, #f7f3ed, #f4eee6, #f0e9df);
+            --bg-tile: rgba(0,0,0,0.02);
+            --border-tile: rgba(0,0,0,0.05);
+        }
+        html.dark {
+            --bs-primary: #2dd4bf;
+            --bg-body: #0b0e0e;
+            --bg-card: #151f1e;
+            --bg-sidebar: linear-gradient(180deg, #0d1817 0%, #111e1d 100%);
+            --bg-topbar: linear-gradient(135deg, #070c0c, #0a1212);
+            --bg-offcanvas: linear-gradient(180deg, #070c0c, #0a1212, #0d1817);
+            --bg-dash: linear-gradient(135deg, #070c0c, #0a1212, #0d1817);
+            --bg-tile: rgba(255,255,255,0.03);
+            --border-tile: rgba(255,255,255,0.06);
+            --text-primary: #e2e8f0;
+            --text-muted: #a8a29e;
+            --text-sidebar: rgba(255,255,255,0.65);
+            --text-sidebar-hover: #ffffff;
+            --text-sidebar-active: #2dd4bf;
+            --sidebar-active-bg: rgba(45,212,191,0.15);
+            --border-color: rgba(255,255,255,0.06);
+            --border-strong: rgba(255,255,255,0.12);
+            --shadow-card: 0 2px 10px rgba(0,0,0,0.3);
+            --input-bg: #1a2624;
+            --input-text: #e2e8f0;
+            --input-border: rgba(255,255,255,0.1);
+            --btn-close-filter: invert(1) brightness(200%);
+            --alert-bg: #151f1e;
+            --alert-text: #e2e8f0;
+            --sidebar-accent: #2dd4bf;
+            --topbar-accent: #2dd4bf;
+            --accent-light: #5eead4;
+            --accent-warm: #fbbf24;
+            --accent-glow: rgba(45,212,191,0.2);
+        }
+        body {
+            background-color: var(--bg-body);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            transition: background-color 0.6s ease-in-out, color 0.6s ease-in-out;
+        }
+
+        .card, .card-header, .card-body, .navbar, .sidebar, .topbar,
+        .offcanvas, .modal-content, .modal-header, .modal-body,
+        .list-group-item, .dropdown-menu, .dropdown-item,
+        input, select, textarea, .form-control, .form-select,
+        .btn, .badge, .table, .page-link, .breadcrumb,
+        .alert, .progress, .progress-bar, .input-group-text,
+        footer, .toast, .toast-header {
+            transition: background-color 0.6s ease-in-out,
+                        color 0.5s ease-in-out,
+                        border-color 0.5s ease-in-out,
+                        box-shadow 0.5s ease-in-out;
+        }
+
+        /* ---- Sidebar (desktop) ---- */
+        .sidebar {
+            background: var(--bg-sidebar);
+            height: 100vh;
+            position: sticky;
+            top: 0;
+            padding-top: 1rem;
+            border-right: 1px solid var(--border-color);
+            overflow-y: auto;
+        }
+        .side-header {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 0.5rem 0.75rem 0.75rem;
+        }
+        .sidebar .nav-link {
+            color: var(--text-sidebar);
+            border-radius: 0.5rem;
+            margin: 0.15rem 0.5rem;
+            padding: 0.65rem 0.85rem;
+            font-size: 0.9rem;
+            transition: all 0.2s;
+        }
+        .sidebar .nav-link:hover {
+            color: var(--text-sidebar-hover);
+            background: rgba(0,0,0,0.04);
+        }
+        html.dark .sidebar .nav-link:hover {
+            background: rgba(255,255,255,0.06);
+        }
+        html.dark .sidebar {
+            border-right-color: transparent;
+        }
+        .sidebar .nav-link.active {
+            color: var(--text-sidebar-active);
+            background: var(--sidebar-active-bg);
+            border-left: 3px solid var(--sidebar-accent);
+        }
+        .sidebar .nav-link i {
+            margin-right: 0.5rem;
+            width: 1.2rem;
+            text-align: center;
+        }
+        .sidebar .nav-link .badge {
+            transition: none;
+        }
+        .sidebar small.text-secondary {
+            color: var(--text-muted) !important;
+        }
+        .sidebar hr {
+            border-color: var(--border-color);
+        }
+        .sidebar .text-white-50 {
+            color: var(--text-sidebar) !important;
+        }
+
+        /* ---- Theme button ---- */
+        .theme-btn {
+            background: none; border: none;
+            color: var(--text-sidebar);
+            font-size: 1.15rem; cursor: pointer;
+            padding: 0.3rem; border-radius: 50%;
+            transition: all 0.3s;
+            min-width: 36px; min-height: 36px;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .theme-btn:hover {
+            color: var(--sidebar-accent);
+            background: var(--sidebar-active-bg);
+        }
+        html.dark .theme-btn { color: #ffd700; }
+        html.dark .theme-btn:hover { color: #ffe44d; background: rgba(255,215,0,0.12); }
+
+        /* ---- Cards ---- */
+        .card {
+            background-color: var(--bg-card);
+            border: none;
+            border-radius: 1rem;
+            box-shadow: var(--shadow-card);
+            transition: transform 0.2s, background-color 0.25s, box-shadow 0.25s;
+            color: var(--text-primary);
+        }
+        .card:hover {
+            transform: translateY(-2px);
+        }
+        .card-header {
+            background: transparent;
+            border-bottom: 1px solid var(--border-color);
+            font-weight: 600;
+            padding: 1rem 1.25rem;
+            color: var(--text-primary);
+        }
+        .card-body, .card-footer {
+            color: var(--text-primary);
+        }
+
+        /* ---- Badges de nivel (colores semánticos fijos) ---- */
+        .badge-nivel {
+            padding: 0.35em 0.65em;
+            font-size: 0.85em;
+        }
+        .nivel-bajo { color: #155724; background-color: #d4edda; }
+        .nivel-medio { color: #856404; background-color: #fff3cd; }
+        .nivel-alto { color: #721c24; background-color: #f8d7da; }
+        .nivel-desconocido { color: #495057; background-color: #e9ecef; }
+
+        /* ---- Dashboard stats (gradientes fijos) ---- */
+        .dashboard-stat { padding: 1.5rem; border-radius: 1rem; color: #fff; }
+        .dashboard-stat .icon { font-size: 2.5rem; opacity: 0.3; position: absolute; right: 1rem; top: 1rem; }
+        .dashboard-stat .number { font-size: 2rem; font-weight: 700; }
+        .dashboard-stat .label { font-size: 0.9rem; opacity: 0.9; }
+        .stat-seguro { background: linear-gradient(135deg, #28a745, #20c997); }
+        .stat-alerta { background: linear-gradient(135deg, #dc3545, #e74c3c); }
+        .stat-info { background: linear-gradient(135deg, #0d6efd, #0dcaf0); }
+        .stat-warning { background: linear-gradient(135deg, #ffc107, #fd7e14); }
+
+        /* ---- Map ---- */
+        .map-container { height: calc(100vh - 90px); min-height: 500px; border-radius: 1rem; overflow: hidden; }
+        .leaflet-container { height: 100%; width: 100%; }
+
+        /* ---- Flash messages ---- */
+        .flash-messages {
+            position: fixed; top: 60px; left: 50%; transform: translateX(-50%);
+            z-index: 9999; max-width: 500px; width: 90%;
+        }
+
+        /* ---- Footer ---- */
+        .footer-bar {
+            background: var(--bg-card);
+            border-top: 1px solid var(--border-color);
+            transition: background 0.25s;
+        }
+
+        /* ---- Misc ---- */
+        .btn-rapido { border-radius: 50px; padding: 0.8rem 2rem; font-weight: 600; }
+        .grafico-container { position: relative; height: 300px; }
+
+        /* ---- Table ---- */
+        .table {
+            color: var(--text-primary);
+            transition: color 0.25s;
+        }
+
+        /* ---- Form controls, modals, dropdowns ---- */
+        .modal-content,
+        .dropdown-menu,
+        .form-control,
+        .form-select,
+        .list-group-item {
+            background-color: var(--input-bg);
+            color: var(--input-text);
+            border-color: var(--input-border);
+            transition: background-color 0.25s, color 0.25s, border-color 0.25s;
+        }
+        .btn-close { filter: var(--btn-close-filter); transition: filter 0.25s; }
+
+        /* ---- Mobile Top Bar ---- */
+        .mobile-top-bar {
+            background: var(--bg-topbar);
+            border-bottom: 1px solid var(--border-color);
+            transition: background 0.3s, border-color 0.3s;
+        }
+        .mobile-top-bar .tb-btn {
+            display: flex; align-items: center; justify-content: center;
+            min-width: 44px; min-height: 44px;
+            color: var(--text-sidebar); text-decoration: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .mobile-top-bar .tb-btn:hover { color: var(--text-sidebar-hover); }
+        html.dark .mobile-top-bar .tb-btn { color: rgba(255,255,255,0.6); }
+        html.dark .mobile-top-bar .tb-btn:hover { color: #fff; }
+        html.dark .mobile-top-bar {
+            border-bottom-color: rgba(255,255,255,0.06);
+        }
+        .nav-toggle-btn {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 12px; width: 40px; height: 40px;
+            display: flex; align-items: center; justify-content: center;
+            color: var(--text-sidebar); font-size: 1.3rem;
+            transition: all 0.2s;
+        }
+        .nav-toggle-btn:hover {
+            color: var(--sidebar-accent);
+            box-shadow: 0 0 20px var(--accent-glow);
+        }
+        html.dark .nav-toggle-btn {
+            background: linear-gradient(135deg, #1a1a2e, #16213e);
+            border: none;
+            color: rgba(255,255,255,0.7);
+        }
+
+        /* ---- Offcanvas ---- */
+        .offcanvas-sidebar {
+            background: var(--bg-offcanvas);
+            color: var(--text-primary);
+            width: 280px !important;
+            transition: background 0.3s;
+        }
+        .offcanvas-sidebar .offcanvas-header {
+            border-bottom: 1px solid var(--border-color);
+            padding: 1rem;
+        }
+        .offcanvas-sidebar .offcanvas-body { padding: 0.5rem 0; }
+        .offcanvas-sidebar .offcanvas-body .nav-mobile-link {
+            display: flex; align-items: center; gap: 0.75rem;
+            padding: 0.8rem 1.2rem; min-height: 48px;
+            color: var(--text-sidebar);
+            text-decoration: none; font-size: 0.9rem;
+            border-left: 3px solid transparent;
+            transition: all 0.2s;
+            position: relative;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .offcanvas-sidebar .offcanvas-body .nav-mobile-link:hover {
+            color: var(--text-sidebar-hover);
+            background: rgba(0,0,0,0.04);
+        }
+        html.dark .offcanvas-sidebar .offcanvas-body .nav-mobile-link:hover {
+            background: rgba(255,255,255,0.04);
+        }
+        .offcanvas-sidebar .offcanvas-body .nav-mobile-link.active {
+            color: var(--sidebar-accent);
+            background: var(--sidebar-active-bg);
+            border-left-color: var(--sidebar-accent);
+        }
+        .offcanvas-sidebar .offcanvas-body .nav-mobile-link i {
+            width: 20px; text-align: center; font-size: 1rem;
+        }
+        .offcanvas-sidebar .offcanvas-body .nav-mobile-section {
+            padding: 0.75rem 1.2rem 0.25rem;
+            font-size: 0.6rem; text-transform: uppercase;
+            letter-spacing: 1px; color: var(--text-muted);
+        }
+        .offcanvas-sidebar .offcanvas-body .nav-mobile-divider {
+            margin: 0.5rem 1.2rem;
+            border-color: var(--border-color);
+        }
+        .offcanvas-sidebar .offcanvas-body .nav-mobile-user {
+            display: flex; align-items: center; gap: 0.75rem;
+            padding: 0.8rem 1.2rem;
+        }
+        .offcanvas-sidebar .offcanvas-body .nav-mobile-user .um-name {
+            font-size: 0.85rem; font-weight: 600;
+            color: var(--text-primary);
+        }
+        .offcanvas-sidebar .offcanvas-body .nav-mobile-user .um-rol {
+            font-size: 0.6rem;
+            color: var(--text-muted);
+        }
+
+        @media (max-width: 767px) {
+            .sidebar { display: none; }
+            .map-container { height: calc(100vh - 70px); min-height: 400px; }
+            .dashboard-stat .number { font-size: 1.5rem; }
+            .offcanvas-backdrop { z-index: 1040; }
+        }
+        @media (min-width: 768px) {
+            .mobile-top-bar { display: none; }
+        }
+    </style>
+    {% block extra_head %}{% endblock %}
+</head>
+<body data-auth="{{ 'true' if current_user.is_authenticated else 'false' }}">
+    <div class="flash-messages">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show shadow-sm" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+    </div>
+
+    {% if current_user.is_authenticated %}
+    <!-- Mobile Top Bar (hidden on md+) -->
+    <div class="mobile-top-bar d-md-none px-3 py-2 d-flex align-items-center justify-content-between">
+        <button class="nav-toggle-btn tb-btn" type="button" data-bs-toggle="offcanvas" data-bs-target="#mobileDrawer" aria-controls="mobileDrawer">
+            <i class="bi bi-list"></i>
+        </button>
+        <a href="{{ url_for('routes.dashboard') }}" class="tb-btn text-decoration-none d-flex align-items-center gap-2">
+            <i class="bi bi-shield-check" style="color: var(--topbar-accent); font-size: 1.3rem;"></i>
+            <span style="font-weight: 700; font-size: 0.75rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">SEGURIDAD VECINAL</span>
+        </a>
+        <a href="{{ url_for('alertas.listar_alertas') }}" class="tb-btn position-relative">
+            <i class="bi bi-bell"></i>
+            {% if alertas_no_leidas is defined and alertas_no_leidas > 0 %}
+            <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style="font-size: 0.5rem;">{{ alertas_no_leidas }}</span>
+            {% endif %}
+        </a>
+        <button class="tb-btn theme-btn" onclick="toggleTheme()" title="Tema" id="themeBtnMobile">
+            <i class="bi bi-moon-fill" id="themeIconMobile"></i>
+        </button>
+    </div>
+
+    <!-- Mobile Offcanvas Drawer -->
+    <div class="offcanvas offcanvas-start offcanvas-sidebar" tabindex="-1" id="mobileDrawer" aria-labelledby="mobileDrawerLabel">
+        <div class="offcanvas-header">
+            <div class="d-flex align-items-center gap-2">
+                <i class="bi bi-shield-check" style="color: var(--topbar-accent); font-size: 1.5rem;"></i>
+                <span style="font-weight: 700; font-size: 0.85rem; color: var(--text-primary);">SEGURIDAD VECINAL</span>
+            </div>
+            <button type="button" class="btn-close" data-bs-dismiss="offcanvas"></button>
+        </div>
+        <div class="offcanvas-body">
+            <!-- User info -->
+            <div class="nav-mobile-user">
+                {% if current_user.foto_url %}
+                <img src="{{ url_for('static', filename=current_user.foto_url) }}" alt="" style="width:36px;height:36px;border-radius:50%;object-fit:cover;">
+                {% else %}
+                <div style="width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,var(--accent-light),var(--sidebar-accent));display:flex;align-items:center;justify-content:center;font-weight:800;color:#000;font-size:0.9rem;">{{ current_user.nombre[:1]|upper }}</div>
+                {% endif %}
+                <div>
+                    <div class="um-name">{{ current_user.nombre }}</div>
+                    <div class="um-rol"><span class="badge bg-{{ 'success' if current_user.rol == 'admin' else 'info' if current_user.rol == 'junta' else 'secondary' }}" style="font-size:0.5rem;">{{ current_user.rol }}</span></div>
+                </div>
+            </div>
+            <hr class="nav-mobile-divider">
+
+            <a class="nav-mobile-link {% if request.endpoint == 'routes.dashboard' %}active{% endif %}" href="{{ url_for('routes.dashboard') }}" >
+                <i class="bi bi-speedometer2"></i> Dashboard
+            </a>
+            <a class="nav-mobile-link {% if request.endpoint == 'mapa.mapa' %}active{% endif %}" href="{{ url_for('mapa.mapa') }}" >
+                <i class="bi bi-map"></i> Mapa Predictivo
+            </a>
+            <a class="nav-mobile-link {% if request.endpoint == 'incidentes.reportar' %}active{% endif %}" href="{{ url_for('incidentes.reportar') }}" >
+                <i class="bi bi-exclamation-triangle"></i> Reportar
+            </a>
+            <a class="nav-mobile-link {% if request.endpoint == 'incidentes.lista_incidentes' or request.endpoint == 'incidentes.historial' %}active{% endif %}" href="{{ url_for('incidentes.lista_incidentes') }}" >
+                <i class="bi bi-list-ul"></i> Incidentes
+            </a>
+            <a class="nav-mobile-link {% if request.endpoint == 'alertas.listar_alertas' %}active{% endif %}" href="{{ url_for('alertas.listar_alertas') }}" >
+                <i class="bi bi-bell"></i> Alertas
+                {% if alertas_no_leidas is defined and alertas_no_leidas > 0 %}
+                <span class="ms-auto badge bg-danger rounded-pill" style="font-size:0.6rem;">{{ alertas_no_leidas }}</span>
+                {% endif %}
+            </a>
+            <a class="nav-mobile-link {% if request.endpoint == 'routes.reportes' %}active{% endif %}" href="{{ url_for('routes.reportes') }}" >
+                <i class="bi bi-file-earmark-bar-graph"></i> Reportes
+            </a>
+
+            {% if current_user.es_admin() or current_user.es_junta() %}
+            <div class="nav-mobile-section">Administraci&oacute;n</div>
+            {% if current_user.es_junta() or current_user.es_admin() %}
+            <a class="nav-mobile-link {% if request.endpoint == 'alertas.crear_alerta_masiva' %}active{% endif %}" href="{{ url_for('alertas.crear_alerta_masiva') }}" >
+                <i class="bi bi-megaphone"></i> Enviar Alerta
+            </a>
+            {% endif %}
+            {% if current_user.es_admin() %}
+            <a class="nav-mobile-link {% if request.endpoint == 'usuarios.admin_panel' %}active{% endif %}" href="{{ url_for('usuarios.admin_panel') }}" >
+                <i class="bi bi-people"></i> Usuarios
+            </a>
+            <a class="nav-mobile-link" href="#" onclick="entrenarModelo(); return false;">
+                <i class="bi bi-cpu"></i> Entrenar IA
+            </a>
+            {% endif %}
+            {% endif %}
+
+            <hr class="nav-mobile-divider">
+            <a class="nav-mobile-link {% if request.endpoint == 'routes.perfil' %}active{% endif %}" href="{{ url_for('routes.perfil') }}" >
+                <i class="bi bi-gear"></i> Mi Perfil
+            </a>
+            <a class="nav-mobile-link" href="{{ url_for('auth.logout') }}">
+                <i class="bi bi-box-arrow-right"></i> Cerrar Sesi&oacute;n
+            </a>
+        </div>
+    </div>
+
+    <!-- Desktop Layout -->
+    <div class="container-fluid" style="padding-top: 0;">
+        <div class="row">
+            <div class="col-md-2 col-lg-2 d-none d-md-block sidebar p-0">
+                <div class="side-header">
+            <a href="{{ url_for('routes.dashboard') }}" class="text-decoration-none d-flex align-items-center gap-2">
+                <i class="bi bi-shield-check" style="font-size: 1.3rem; color: var(--color-seguro);"></i>
+                <div style="line-height: 1.1;">
+                    <div style="font-size: 0.6rem; font-weight: 700; color: var(--text-sidebar); text-transform: uppercase; letter-spacing: 0.5px;">SEGURIDAD</div>
+                    <div style="font-size: 0.6rem; font-weight: 700; color: var(--text-sidebar); text-transform: uppercase; letter-spacing: 0.5px;">VECINAL</div>
+                </div>
+            </a>
+                    <button class="theme-btn" onclick="toggleTheme()" title="Tema" id="themeBtnDesktop">
+                        <i class="bi bi-moon-fill" id="themeIconDesktop"></i>
+                    </button>
+                </div>
+                <nav class="nav flex-column">
+                    <a class="nav-link {% if request.endpoint == 'routes.dashboard' %}active{% endif %}" href="{{ url_for('routes.dashboard') }}">
+                        <i class="bi bi-speedometer2"></i> Dashboard
+                    </a>
+                    <a class="nav-link {% if request.endpoint == 'mapa.mapa' %}active{% endif %}" href="{{ url_for('mapa.mapa') }}">
+                        <i class="bi bi-map"></i> Mapa Predictivo
+                    </a>
+                    <a class="nav-link {% if request.endpoint == 'incidentes.reportar' %}active{% endif %}" href="{{ url_for('incidentes.reportar') }}">
+                        <i class="bi bi-exclamation-triangle"></i> Reportar
+                    </a>
+                    <a class="nav-link {% if request.endpoint == 'incidentes.lista_incidentes' or request.endpoint == 'incidentes.historial' %}active{% endif %}" href="{{ url_for('incidentes.lista_incidentes') }}">
+                        <i class="bi bi-list-ul"></i> Incidentes
+                    </a>
+                    <a class="nav-link {% if request.endpoint == 'alertas.listar_alertas' %}active{% endif %}" href="{{ url_for('alertas.listar_alertas') }}">
+                        <i class="bi bi-bell"></i> Alertas
+                        {% if alertas_no_leidas is defined and alertas_no_leidas > 0 %}
+                            <span class="badge bg-danger rounded-pill ms-auto">{{ alertas_no_leidas }}</span>
+                        {% endif %}
+                    </a>
+                    <a class="nav-link {% if request.endpoint == 'routes.reportes' %}active{% endif %}" href="{{ url_for('routes.reportes') }}">
+                        <i class="bi bi-file-earmark-bar-graph"></i> Reportes
+                    </a>
+                    {% if current_user.es_admin() or current_user.es_junta() %}
+                    <div class="px-3 mt-3 mb-1">
+                        <hr class="border-secondary">
+                        <small class="text-secondary">Administraci&oacute;n</small>
+                    </div>
+                    {% if current_user.es_junta() or current_user.es_admin() %}
+                    <a class="nav-link {% if request.endpoint == 'alertas.crear_alerta_masiva' %}active{% endif %}" href="{{ url_for('alertas.crear_alerta_masiva') }}">
+                        <i class="bi bi-megaphone"></i> Enviar Alerta
+                    </a>
+                    {% endif %}
+                    {% if current_user.es_admin() %}
+                    <a class="nav-link {% if request.endpoint == 'usuarios.admin_panel' %}active{% endif %}" href="{{ url_for('usuarios.admin_panel') }}">
+                        <i class="bi bi-people"></i> Usuarios
+                    </a>
+                    <a class="nav-link" href="#" onclick="entrenarModelo()">
+                        <i class="bi bi-cpu"></i> Entrenar IA
+                    </a>
+                    {% endif %}
+                    {% endif %}
+                    <hr class="border-secondary mx-3 my-2">
+                    <div class="px-3 mb-2">
+                        <div class="d-flex align-items-center text-white-50 small">
+                            {% if current_user.foto_url %}
+                            <img src="{{ url_for('static', filename=current_user.foto_url) }}" alt="" style="width:24px;height:24px;border-radius:50%;object-fit:cover;margin-right:0.5rem;">
+                            {% else %}
+                            <i class="bi bi-person-circle me-2"></i>
+                            {% endif %}
+                            <span class="text-truncate">{{ current_user.nombre }}</span>
+                            <span class="badge bg-{{ 'success' if current_user.rol == 'admin' else 'info' if current_user.rol == 'junta' else 'secondary' }} ms-2" style="font-size: 0.65rem;">{{ current_user.rol }}</span>
+                        </div>
+                    </div>
+                    <a class="nav-link {% if request.endpoint == 'routes.perfil' %}active{% endif %}" href="{{ url_for('routes.perfil') }}">
+                        <i class="bi bi-gear"></i> Mi Perfil
+                    </a>
+                    <a class="nav-link" href="{{ url_for('auth.logout') }}">
+                        <i class="bi bi-box-arrow-right"></i> Cerrar Sesi&oacute;n
+                    </a>
+                </nav>
+            </div>
+
+            <div class="col-md-10 col-lg-10 px-0">
+                <div class="p-3 p-md-4">
+                    {% block content %}{% endblock %}
+                </div>
+            </div>
+        </div>
+    </div>
+    {% else %}
+        {% block content_public %}{% endblock %}
+    {% endif %}
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script>
+    {% block extra_scripts %}{% endblock %}
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            document.querySelectorAll('select[data-color-options]').forEach(function(sel) {
+                var updateColor = function() {
+                    var opt = sel.options[sel.selectedIndex];
+                    sel.style.borderLeftColor = opt && opt.dataset.color ? opt.dataset.color : '#6c757d';
+                };
+                sel.addEventListener('change', updateColor);
+                updateColor();
+            });
+        });
+    </script>
+    <script>
+        var auth = document.body.dataset.auth === 'true';
+        if (auth) {
+            var drawerEl = document.getElementById('mobileDrawer');
+            if (drawerEl) {
+                drawerEl.addEventListener('click', function(e) {
+                    var link = e.target.closest('.nav-mobile-link');
+                    if (link && link.href && link.href !== '#' && !link.getAttribute('onclick')) {
+                        e.preventDefault();
+                        var drawer = bootstrap.Offcanvas.getInstance(drawerEl);
+                        if (drawer) drawer.hide();
+                        setTimeout(function() { window.location.href = link.href; }, 200);
+                    }
+                });
+            }
+        }
+        function toggleTheme() {
+            var h = document.documentElement;
+            var dark = h.classList.contains('dark');
+            if (dark) { h.classList.remove('dark'); h.setAttribute('data-bs-theme','light'); }
+            else { h.classList.add('dark'); h.setAttribute('data-bs-theme','dark'); }
+            localStorage.setItem('theme', dark ? 'light' : 'dark');
+            updateThemeIcons(!dark);
+        }
+        function updateThemeIcons(isDark) {
+            var icons = document.querySelectorAll('#themeIconDesktop, #themeIconMobile');
+            icons.forEach(function(ic) { ic.className = isDark ? 'bi bi-moon-fill' : 'bi bi-sun-fill'; });
+        }
+        function applyDataStyles() {
+            document.querySelectorAll('[data-style-bg]').forEach(function(e){if(e.dataset.styleBg)e.style.backgroundColor=e.dataset.styleBg});
+            document.querySelectorAll('[data-style-color]').forEach(function(e){if(e.dataset.styleColor)e.style.color=e.dataset.styleColor});
+            document.querySelectorAll('[data-style-bdleft]').forEach(function(e){if(e.dataset.styleBdleft)e.style.borderLeft=e.dataset.styleBdleft});
+            document.querySelectorAll('[data-style-width]').forEach(function(e){if(e.dataset.styleWidth)e.style.width=e.dataset.styleWidth});
+        }
+        document.addEventListener('DOMContentLoaded', applyDataStyles);
+        function initLiveClock() {
+            var el = document.getElementById('liveClock');
+            if (!el) return;
+            function tick() {
+                var n = new Date();
+                var b = new Date(n.getTime() - (n.getTimezoneOffset() + 240) * 60000);
+                el.textContent = b.toLocaleDateString('es-BO', {day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit',second:'2-digit'});
+            }
+            tick(); setInterval(tick, 1000);
+        }
+        document.addEventListener('DOMContentLoaded', initLiveClock);
+        function showConfirmModal(msg, btnText, btnClass, callback) {
+            var el = document.getElementById('confirmMsg');
+            var btn = document.getElementById('confirmBtn');
+            if (!el || !btn) return;
+            el.textContent = msg;
+            btn.textContent = btnText;
+            btn.className = 'btn btn-sm px-4 ' + btnClass;
+            btn.style.borderRadius = '10px';
+            var modalEl = document.getElementById('confirmModal');
+            var modal = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
+            var done = false;
+            btn.onclick = function() { if (!done) { done = true; modal.hide(); callback(true); } };
+            modalEl.addEventListener('hidden.bs.modal', function handler() {
+                modalEl.removeEventListener('hidden.bs.modal', handler);
+                if (!done) { done = true; callback(false); }
+            });
+            modal.show();
+        }
+        document.querySelectorAll('[data-confirm]').forEach(function(f) {
+            f.addEventListener('submit', function(e) {
+                e.preventDefault();
+                var d = this.dataset;
+                showConfirmModal(d.confirm || '¿Confirmar acción?', d.btnText || 'Confirmar', d.btnClass || 'btn-primary', function(ok) {
+                    if (ok) { var hidden = document.createElement('input'); hidden.type = 'hidden'; hidden.name = 'csrf_token'; hidden.value = document.querySelector('input[name=csrf_token]') && document.querySelector('input[name=csrf_token]').value || ''; f.appendChild(hidden); f.submit(); }
+                });
+            });
+        });
+        function entrenarModelo() {
+            showConfirmModal('¿Iniciar entrenamiento del modelo de IA? Esto puede tomar unos segundos.', 'Iniciar', 'btn-warning', function(ok) {
+                if (!ok) return;
+                var drawer = bootstrap.Offcanvas.getInstance(document.getElementById('mobileDrawer'));
+                if (drawer) drawer.hide();
+                fetch('/predicciones/admin/entrenar', { method: 'POST' })
+                    .then(function(r) {
+                        if (!r.ok) throw new Error('Error HTTP ' + r.status + (r.status === 403 ? ' (sin permisos de admin)' : ''));
+                        return r.json();
+                    })
+                    .then(function(d) {
+                        if (d.success) {
+                            window.location.href = '/mapa?view=predicciones';
+                        } else {
+                            alert('Error: ' + d.error);
+                        }
+                    })
+                    .catch(function(e) { alert('Error: ' + e.message); });
+            });
+        }
+    </script>
+    <script>
+        (function() {
+            var saved = localStorage.getItem('theme') || 'dark';
+            var h = document.documentElement;
+            if (saved === 'dark') { h.classList.add('dark'); h.setAttribute('data-bs-theme','dark'); }
+            else { h.classList.remove('dark'); h.setAttribute('data-bs-theme','light'); }
+            var icons = document.querySelectorAll('#themeIconDesktop, #themeIconMobile');
+            icons.forEach(function(ic) { ic.className = saved === 'dark' ? 'bi bi-moon-fill' : 'bi bi-sun-fill'; });
+        })();
+    </script>
+
+<div class="modal fade" id="confirmModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered modal-sm">
+    <div class="modal-content" style="border-radius:16px;">
+      <div class="modal-body text-center py-4">
+        <i class="bi bi-question-circle" style="font-size:2.5rem;color:var(--sidebar-accent);"></i>
+        <p class="mt-3 mb-0" id="confirmMsg" style="font-size:0.95rem;font-weight:500;"></p>
+      </div>
+      <div class="modal-footer justify-content-center border-0 pt-0 pb-3 gap-2">
+        <button class="btn btn-sm btn-outline-secondary px-4" data-bs-dismiss="modal" style="border-radius:10px;">Cancelar</button>
+        <button class="btn btn-sm px-4" id="confirmBtn" style="border-radius:10px;"></button>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

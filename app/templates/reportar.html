@@ -1,0 +1,220 @@
+{% extends "base.html" %}
+{% block title %}Reportar Incidente - SEGURIDAD VECINAL{% endblock %}
+{% block content %}
+<div class="row g-4">
+    <div class="col-lg-7">
+        <div class="card">
+            <div class="card-header">
+                <i class="bi bi-exclamation-triangle me-2"></i>Reportar Incidente
+            </div>
+            <div class="card-body">
+                <form method="POST" action="{{ url_for('incidentes.reportar') }}" id="formReporte" enctype="multipart/form-data">
+                    {{ form.hidden_tag() }}
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label" for="tipo_incidente_id">Tipo de Incidente</label>
+                            <select name="tipo_incidente_id" id="tipo_incidente_id" class="form-select{{ ' is-invalid' if form.tipo_incidente_id.errors else '' }}" style="border-left:5px solid #6c757d;" data-color-options required>
+                                <option value="" disabled selected>Seleccionar tipo...</option>
+                                {% for t in tipos %}
+                                <option value="{{ t.id }}" data-color="{{ t.color }}" style="border-left:4px solid {{ t.color }};padding-left:8px;">{{ t.nombre.replace('_',' ')|title }}</option>
+                                {% endfor %}
+                            </select>
+                            {% for error in form.tipo_incidente_id.errors %}<div class="invalid-feedback">{{ error }}</div>{% endfor %}
+                        </div>
+                        <div class="col-md-6">
+                            {{ form.fecha_hora.label(class="form-label") }}
+                            {{ form.fecha_hora(class="form-control" + (" is-invalid" if form.fecha_hora.errors else ""), type="datetime-local") }}
+                            <small class="text-muted">Hora Bolivia (UTC-4). </small>
+                            {% for error in form.fecha_hora.errors %}<div class="invalid-feedback">{{ error }}</div>{% endfor %}
+                        </div>
+                        <div class="col-12">
+                            {{ form.descripcion.label(class="form-label") }}
+                            {{ form.descripcion(class="form-control" + (" is-invalid" if form.descripcion.errors else "")) }}
+                            {% for error in form.descripcion.errors %}<div class="invalid-feedback">{{ error }}</div>{% endfor %}
+                        </div>
+                        <div class="col-md-6">
+                            {{ form.latitud.label(class="form-label") }}
+                            <div class="input-group">
+                                {{ form.latitud(class="form-control" + (" is-invalid" if form.latitud.errors else ""), readonly=True, id="latitudInput") }}
+                                <button class="btn btn-outline-secondary" type="button" id="btnDetectarGps"><i class="bi bi-geo-alt"></i></button>
+                            </div>
+                            {% for error in form.latitud.errors %}<div class="invalid-feedback">{{ error }}</div>{% endfor %}
+                        </div>
+                        <div class="col-md-6">
+                            {{ form.longitud.label(class="form-label") }}
+                            {{ form.longitud(class="form-control" + (" is-invalid" if form.longitud.errors else ""), readonly=True, id="longitudInput") }}
+                            {% for error in form.longitud.errors %}<div class="invalid-feedback">{{ error }}</div>{% endfor %}
+                        </div>
+                        <div class="col-12">
+                            {{ form.direccion.label(class="form-label") }}
+                            {{ form.direccion(class="form-control" + (" is-invalid" if form.direccion.errors else "")) }}
+                            {% for error in form.direccion.errors %}<div class="invalid-feedback">{{ error }}</div>{% endfor %}
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label">Fotos (opcional)</label>
+                            <input type="file" class="form-control" name="evidencias" accept="image/*" multiple>
+                            <small class="text-muted">Sube hasta 5 fotos como evidencia</small>
+                        </div>
+                        <div class="col-12">
+                            {{ form.submit(class="btn btn-danger btn-lg w-100 btn-rapido") }}
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-5">
+        <div class="card">
+            <div class="card-header"><i class="bi bi-pin-map me-2"></i>Selecciona en el mapa</div>
+            <div class="card-body p-1">
+                <div id="mapaSeleccion" style="height: 350px; border-radius: 0.5rem;"></div>
+            </div>
+            <div class="card-body py-2">
+                <div class="input-group input-group-sm mb-2">
+                    <input type="text" id="searchBox" class="form-control" placeholder="Buscar dirección o lugar...">
+                    <button class="btn btn-outline-success" type="button" id="btnSearch"><i class="bi bi-search"></i></button>
+                </div>
+                <div id="searchResults" class="list-group mb-2" style="max-height: 150px; overflow-y: auto; display: none;"></div>
+                <small class="text-muted">Haz clic en el mapa o busca un lugar para seleccionar la ubicación.</small>
+            </div>
+        </div>
+    </div>
+</div>
+<div hidden id="repCoords" data-lat="{{ form.latitud.data or -17.7833 }}" data-lng="{{ form.longitud.data or -63.1825 }}"></div>
+{% endblock %}
+{% block extra_scripts %}
+<script>
+var mapaSel, marcadorSel;
+
+document.addEventListener('DOMContentLoaded', function() {
+    var c = document.getElementById('repCoords');
+    var latDefault = parseFloat(c.dataset.lat);
+    var lngDefault = parseFloat(c.dataset.lng);
+
+    mapaSel = L.map('mapaSeleccion').setView([latDefault, lngDefault], 14);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 18,
+    }).addTo(mapaSel);
+    setTimeout(function() { mapaSel.invalidateSize(); }, 200);
+
+    mapaSel.on('click', function(e) {
+        colocarMarcador(e.latlng.lat, e.latlng.lng);
+    });
+
+    if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(function(pos) {
+            colocarMarcador(pos.coords.latitude, pos.coords.longitude);
+            mapaSel.setView([pos.coords.latitude, pos.coords.longitude], 15);
+        }, function() {
+            colocarMarcador(latDefault, lngDefault);
+        });
+    } else {
+        colocarMarcador(latDefault, lngDefault);
+    }
+
+    document.getElementById('btnDetectarGps').addEventListener('click', function() {
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(function(pos) {
+                colocarMarcador(pos.coords.latitude, pos.coords.longitude);
+                mapaSel.setView([pos.coords.latitude, pos.coords.longitude], 16);
+                alert('Ubicación detectada.');
+            }, function() {
+                alert('No se pudo obtener la ubicación. Selecciona en el mapa.');
+            });
+        }
+    });
+
+    function colocarMarcador(lat, lng) {
+        if (marcadorSel) mapaSel.removeLayer(marcadorSel);
+        marcadorSel = L.marker([lat, lng], { draggable: true }).addTo(mapaSel);
+        document.getElementById('latitudInput').value = lat.toFixed(6);
+        document.getElementById('longitudInput').value = lng.toFixed(6);
+
+        obtenerDireccion(lat, lng);
+
+        marcadorSel.on('dragend', function(e) {
+            var pos = e.target.getLatLng();
+            document.getElementById('latitudInput').value = pos.lat.toFixed(6);
+            document.getElementById('longitudInput').value = pos.lng.toFixed(6);
+            obtenerDireccion(pos.lat, pos.lng);
+        });
+    }
+
+    function obtenerDireccion(lat, lng) {
+        var dirInput = document.getElementById('direccion');
+        if (!dirInput) return;
+        fetch('https://nominatim.openstreetmap.org/reverse?format=json&lat=' + lat + '&lon=' + lng + '&addressdetails=1')
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+                if (data && data.display_name) {
+                    dirInput.value = data.display_name;
+                } else {
+                    dirInput.value = lat.toFixed(6) + ', ' + lng.toFixed(6);
+                }
+            })
+            .catch(function() {
+                dirInput.value = lat.toFixed(6) + ', ' + lng.toFixed(6);
+            });
+    }
+
+    var searchTimeout;
+    var searchBox = document.getElementById('searchBox');
+    var searchResults = document.getElementById('searchResults');
+    var btnSearch = document.getElementById('btnSearch');
+
+    function buscarLugar(query) {
+        if (!query || query.length < 3) { searchResults.style.display = 'none'; return; }
+        fetch('https://nominatim.openstreetmap.org/search?format=json&q=' + encodeURIComponent(query) + '&limit=5&countrycodes=bo')
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+                searchResults.innerHTML = '';
+                if (data.length === 0) { searchResults.style.display = 'none'; return; }
+                data.forEach(function(item) {
+                    var a = document.createElement('a');
+                    a.className = 'list-group-item list-group-item-action py-1';
+                    a.href = '#';
+                    a.innerHTML = '<small>' + item.display_name.split(',')[0] + ' <span class="text-muted">' + item.display_name.split(',').slice(1,3).join(',') + '</span></small>';
+                    a.addEventListener('click', function(e) {
+                        e.preventDefault();
+                        var lat = parseFloat(item.lat);
+                        var lng = parseFloat(item.lon);
+                        colocarMarcador(lat, lng);
+                        mapaSel.setView([lat, lng], 17);
+                        searchResults.style.display = 'none';
+                        searchBox.value = item.display_name.split(',')[0];
+                    });
+                    searchResults.appendChild(a);
+                });
+                searchResults.style.display = 'block';
+            });
+    }
+
+    if (searchBox) {
+        searchBox.addEventListener('input', function() {
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(function() { buscarLugar(searchBox.value); }, 400);
+        });
+        searchBox.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') { e.preventDefault(); buscarLugar(searchBox.value); }
+        });
+    }
+    if (btnSearch) {
+        btnSearch.addEventListener('click', function() { buscarLugar(searchBox ? searchBox.value : ''); });
+    }
+
+    document.addEventListener('click', function(e) {
+        if (searchResults && !e.target.closest('#searchResults') && !e.target.closest('#searchBox') && !e.target.closest('#btnSearch')) {
+            searchResults.style.display = 'none';
+        }
+    });
+
+    var fh = document.getElementById('fecha_hora');
+    if (fh && !fh.value) {
+        var ahora = new Date();
+        var bolivia = new Date(ahora.getTime() - (ahora.getTimezoneOffset() + 240) * 60000);
+        fh.value = bolivia.toISOString().slice(0, 16);
+    }
+    fh.addEventListener('input', function() { this.dataset.userEdited = 'true'; });
+});
+</script>
+{% endblock %}

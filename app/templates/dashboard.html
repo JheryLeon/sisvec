@@ -1,0 +1,188 @@
+{% extends "base.html" %}
+{% block title %}Dashboard - SEGURIDAD VECINAL{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h4 class="mb-1">Dashboard</h4>
+        <small class="text-muted">Resumen de seguridad vecinal - <span id="liveClock"></span></small>
+    </div>
+    <div>
+        <span class="badge nivel-{{ riesgo_actual.nivel_global }} badge-nivel fs-6 px-3 py-2">
+            <i class="bi bi-shield-{{ 'check' if riesgo_actual.nivel_global == 'bajo' else 'exclamation' if riesgo_actual.nivel_global == 'alto' else 'question' }} me-1"></i>
+            Riesgo: {{ riesgo_actual.nivel_global|upper }}
+        </span>
+    </div>
+</div>
+
+<div class="row g-3 mb-4">
+    <div class="col-6 col-md-3">
+        <div class="dashboard-stat stat-seguro position-relative">
+            <i class="bi bi-shield-check icon"></i>
+            <div class="number">{{ total_incidentes }}</div>
+            <div class="label">Incidentes (30 días)</div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="dashboard-stat stat-alerta position-relative">
+            <i class="bi bi-exclamation-triangle icon"></i>
+            <div class="number">{{ altos_30d }}</div>
+            <div class="label">Riesgo Alto</div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="dashboard-stat stat-warning position-relative">
+            <i class="bi bi-people icon"></i>
+            <div class="number">{{ reportantes_unicos }}</div>
+            <div class="label">Vecinos Reportando</div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="dashboard-stat stat-info position-relative">
+            <i class="bi bi-bell icon"></i>
+            <div class="number">{{ riesgo_actual.zonas_altas }}</div>
+            <div class="label">Zonas Críticas</div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-3 mb-4">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span><i class="bi bi-graph-up me-2"></i>Tendencia de Incidentes</span>
+                <small class="text-muted">Últimos 14 días</small>
+            </div>
+            <div class="card-body">
+                <div class="grafico-container">
+                    <canvas id="graficoTendencia"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header"><i class="bi bi-pie-chart me-2"></i>Tipos de Incidentes</div>
+            <div class="card-body">
+                <div class="grafico-container">
+                    <canvas id="graficoTipos"></canvas>
+                </div>
+                <div class="mt-3" id="leyendaTipos"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-3">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between">
+                <span><i class="bi bi-map me-2"></i>Zonas de Riesgo</span>
+                <small class="text-muted">Según predicciones IA</small>
+            </div>
+            <div class="card-body">
+                {% if riesgo_actual.zonas_altas > 0 or riesgo_actual.zonas_medias > 0 %}
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between mb-1">
+                        <span>Alto <span class="badge bg-danger">{{ riesgo_actual.zonas_altas }}</span></span>
+                        <span>Medio <span class="badge bg-warning text-dark">{{ riesgo_actual.zonas_medias }}</span></span>
+                        <span>Bajo <span class="badge bg-success">{{ riesgo_actual.zonas_bajas }}</span></span>
+                    </div>
+                    {% set total_zonas = riesgo_actual.zonas_altas + riesgo_actual.zonas_medias + riesgo_actual.zonas_bajas %}
+                    {% if total_zonas > 0 %}
+                    <div class="progress" style="height: 12px;">
+                        <div class="progress-bar bg-danger" data-style-width="{{ (riesgo_actual.zonas_altas / total_zonas * 100) }}%"></div>
+                        <div class="progress-bar bg-warning" data-style-width="{{ (riesgo_actual.zonas_medias / total_zonas * 100) }}%"></div>
+                        <div class="progress-bar bg-success" data-style-width="{{ (riesgo_actual.zonas_bajas / total_zonas * 100) }}%"></div>
+                    </div>
+                    {% endif %}
+                </div>
+                    <a href="{{ url_for('mapa.mapa', view='predicciones') }}" class="btn btn-outline-primary btn-sm w-100">
+                    <i class="bi bi-map me-1"></i>Ver Mapa Predictivo
+                </a>
+                {% else %}
+                <div class="text-center text-muted py-4">
+                    <i class="bi bi-cpu fs-1"></i>
+                    <p class="mt-2">No hay predicciones activas.</p>
+                    {% if current_user.es_admin() %}
+                    <button class="btn btn-sm btn-outline-success" onclick="entrenarModelo()">
+                        <i class="bi bi-play me-1"></i>Entrenar Modelo
+                    </button>
+                    {% endif %}
+                </div>
+                {% endif %}
+                {% if current_user.es_admin() and info_modelo.entrenado %}
+                <hr>
+                <div class="d-flex justify-content-between align-items-center small text-muted">
+                    <span><i class="bi bi-clock-history me-1"></i>{{ info_modelo.mensaje }}</span>
+                    <button class="btn btn-sm btn-outline-secondary" onclick="entrenarModelo()" title="Re-entrenar">
+                        <i class="bi bi-arrow-repeat"></i>
+                    </button>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between">
+                <span><i class="bi bi-lightning me-2"></i>Últimos Incidentes</span>
+                <a href="{{ url_for('incidentes.lista_incidentes') }}" class="small">Ver todos</a>
+            </div>
+            <div class="card-body p-0">
+                <div class="list-group list-group-flush">
+                    {% for inc in ultimos_incidentes %}
+                    <div class="list-group-item d-flex align-items-center gap-3 py-3">
+                        <span class="badge rounded-pill nivel-{{ inc.riesgo_nivel }} badge-nivel">
+                            {{ inc.tipo[:12] }}
+                        </span>
+                        <div class="flex-grow-1">
+                            <small class="text-muted d-block">{{ inc.descripcion[:50] if inc.descripcion else 'Sin descripción' }}</small>
+                            <small class="text-muted">{{ inc.fecha_hora|bolivia if inc.fecha_hora else '' }}</small>
+                        </div>
+                        {% if inc.verificado %}
+                        <span class="badge bg-success"><i class="bi bi-check"></i></span>
+                        {% endif %}
+                    </div>
+                    {% else %}
+                    <div class="text-center text-muted py-4">No hay incidentes recientes</div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+<span id="dashStore"
+  data-tlabels='{{ tendencia_datos|map(attribute="fecha")|list|tojson }}'
+  data-tvalues='{{ tendencia_datos|map(attribute="total")|list|tojson }}'
+  data-tylabels='{{ tipos_datos|map(attribute="tipo")|list|tojson }}'
+  data-tyvalues='{{ tipos_datos|map(attribute="total")|list|tojson }}'
+  hidden></span>
+{% block extra_scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    var ds = document.getElementById('dashStore');
+    var tendenciaLabels = JSON.parse(ds.dataset.tlabels);
+    var tendenciaData = JSON.parse(ds.dataset.tvalues);
+    var tiposLabels = JSON.parse(ds.dataset.tylabels);
+    var tiposData = JSON.parse(ds.dataset.tyvalues);
+
+    new Chart(document.getElementById('graficoTendencia').getContext('2d'), {
+        type: 'line',
+        data: { labels: tendenciaLabels, datasets: [{ label: 'Incidentes', data: tendenciaData, borderColor: '#28a745', backgroundColor: 'rgba(40, 167, 69, 0.1)', borderWidth: 3, fill: true, tension: 0.4, pointRadius: 4, pointBackgroundColor: '#28a745' }] },
+        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } }, x: { grid: { display: false } } } }
+    });
+
+    var colores = ['#dc3545', '#ffc107', '#0d6efd', '#20c997', '#6610f2', '#fd7e14', '#6f42c1', '#e83e8c', '#17a2b8'];
+    new Chart(document.getElementById('graficoTipos').getContext('2d'), {
+        type: 'doughnut',
+        data: { labels: tiposLabels, datasets: [{ data: tiposData, backgroundColor: colores.slice(0, tiposLabels.length), borderWidth: 2 }] },
+        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+    });
+
+    document.getElementById('leyendaTipos').innerHTML = tiposLabels.map(function(l, i) {
+        return '<div class="d-flex align-items-center mb-1"><span style="width:12px;height:12px;border-radius:50%;background:' + colores[i] + ';display:inline-block;margin-right:8px;"></span><span class="small">' + l + '</span><span class="ms-auto small fw-bold">' + tiposData[i] + '</span></div>';
+    }).join('');
+});
+</script>
+{% endblock %}

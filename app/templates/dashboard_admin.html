@@ -1,0 +1,598 @@
+{% extends "base.html" %}
+{% block title %}Panel de Control - SEGURIDAD VECINAL{% endblock %}
+{% block content %}
+<style>
+    .dash-wrap {
+        margin: -1rem;
+        padding: 1.25rem;
+        min-height: calc(100vh - 56px);
+        background: var(--bg-dash);
+        position: relative;
+        overflow: hidden;
+        transition: background 0.3s;
+    }
+    @media (min-width: 768px) {
+        .dash-wrap {
+            margin: -1.5rem;
+            padding: 1.5rem;
+        }
+    }
+    .dash-wrap .bg-grid {
+        position: absolute;
+        inset: 0;
+        background-image:
+            linear-gradient(rgba(15,118,110,0.03) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(15,118,110,0.03) 1px, transparent 1px);
+        background-size: 50px 50px;
+        pointer-events: none;
+        z-index: 0;
+        opacity: 0.6;
+    }
+    html.dark .dash-wrap .bg-grid { opacity: 1; }
+    .dash-wrap > *:not(.bg-grid) { position: relative; z-index: 1; }
+
+    .top-bar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 0.75rem;
+        margin-bottom: 1.5rem;
+    }
+    .top-bar .brand-title {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+    }
+    .top-bar .brand-title .shield {
+        width: 40px;
+        height: 40px;
+        background: linear-gradient(135deg, var(--sidebar-accent), var(--accent-light));
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.2rem;
+        color: #000;
+        animation: pulse-shield 2s ease-in-out infinite;
+    }
+    html.dark .top-bar .brand-title .shield {
+        background: linear-gradient(135deg, var(--sidebar-accent), var(--accent-light));
+    }
+    @keyframes pulse-shield {
+        0%,100% { box-shadow: 0 0 0 0 var(--accent-glow); }
+        50% { box-shadow: 0 0 0 8px rgba(15,118,110,0); }
+    }
+    .top-bar .brand-title h2 {
+        font-size: 1.3rem;
+        font-weight: 800;
+        color: var(--text-primary);
+        margin: 0;
+        line-height: 1.2;
+    }
+    .top-bar .brand-title h2 small {
+        display: block;
+        font-size: 0.65rem;
+        font-weight: 400;
+        color: var(--text-muted);
+    }
+    .top-bar .risk-pulse {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.4rem 1rem;
+        border-radius: 50px;
+        font-size: 0.75rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        animation: risk-pulse 2s ease-in-out infinite;
+    }
+    .top-bar .risk-pulse.alto { background: rgba(220,53,69,0.15); color: #ff6b6b; border: 1px solid rgba(220,53,69,0.25); }
+    .top-bar .risk-pulse.medio { background: rgba(255,193,7,0.15); color: #ffe066; border: 1px solid rgba(255,193,7,0.25); }
+    .top-bar .risk-pulse.bajo { background: rgba(0,230,118,0.15); color: #00e676; border: 1px solid rgba(0,230,118,0.25); }
+    .top-bar .risk-pulse.desconocido { background: rgba(255,255,255,0.06); color: rgba(255,255,255,0.4); border: 1px solid rgba(255,255,255,0.08); }
+    @keyframes risk-pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.7; } }
+
+    .top-bar .risk-pulse .live-dot {
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: #00e676;
+        animation: live-blink 1s step-end infinite;
+    }
+    @keyframes live-blink { 50% { opacity: 0; } }
+
+    .stat-grid-4 {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 0.9rem;
+        margin-bottom: 1.25rem;
+    }
+    .stat-tile {
+        background: var(--bg-tile);
+        border: 1px solid var(--border-tile);
+        border-radius: 16px;
+        padding: 1.1rem 1rem;
+        position: relative;
+        overflow: hidden;
+        transition: all 0.3s;
+        cursor: default;
+    }
+    .stat-tile:hover {
+        transform: translateY(-3px);
+        border-color: rgba(15,118,110,0.15);
+        box-shadow: 0 8px 30px rgba(0,0,0,0.12);
+    }
+    html.dark .stat-tile:hover {
+        border-color: rgba(15,118,110,0.15);
+        box-shadow: 0 8px 30px rgba(0,0,0,0.3);
+    }
+    .stat-tile .tile-glow {
+        position: absolute;
+        top: -40%;
+        right: -30%;
+        width: 100px;
+        height: 100px;
+        border-radius: 50%;
+        filter: blur(35px);
+        opacity: 0.08;
+        transition: opacity 0.3s;
+    }
+    .stat-tile:hover .tile-glow { opacity: 0.18; }
+    .stat-tile .tile-icon {
+        font-size: 1.1rem;
+        margin-bottom: 0.3rem;
+    }
+    .stat-tile .tile-num {
+        font-size: 1.6rem;
+        font-weight: 800;
+        color: var(--text-primary);
+        font-family: 'Courier New', monospace;
+        line-height: 1;
+    }
+    .stat-tile .tile-label {
+        font-size: 0.65rem;
+        color: var(--text-muted);
+        margin-top: 0.1rem;
+    }
+
+    .charts-pair {
+        display: grid;
+        grid-template-columns: 1.6fr 1fr;
+        gap: 0.9rem;
+        margin-bottom: 1.25rem;
+    }
+    .chart-box {
+        background: var(--bg-tile);
+        border: 1px solid var(--border-tile);
+        border-radius: 16px;
+        padding: 1.1rem;
+    }
+    .chart-box .c-head {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 0.75rem;
+        font-size: 0.78rem;
+        font-weight: 600;
+        color: var(--text-muted);
+    }
+    .chart-box .c-head small { font-weight: 400; color: var(--text-muted); opacity: 0.6; }
+    .chart-box .c-body {
+        position: relative;
+        height: 200px;
+    }
+
+    .bottom-pair {
+        display: grid;
+        grid-template-columns: 1fr 1.2fr;
+        gap: 0.9rem;
+    }
+    .info-box {
+        background: var(--bg-tile);
+        border: 1px solid var(--border-tile);
+        border-radius: 16px;
+        padding: 1.1rem;
+    }
+    .info-box .i-head {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 0.75rem;
+        font-size: 0.78rem;
+        font-weight: 600;
+        color: var(--text-muted);
+    }
+    .info-box .i-head a {
+        font-size: 0.65rem;
+        font-weight: 400;
+        color: var(--sidebar-accent);
+        text-decoration: none;
+        opacity: 0.7;
+    }
+    .info-box .i-head a:hover { opacity: 1; }
+
+    .bar-group { margin-bottom: 0.5rem; }
+    .bar-group:last-of-type { margin-bottom: 0.75rem; }
+    .bar-row {
+        display: flex;
+        align-items: center;
+        gap: 0.6rem;
+        margin-bottom: 0.35rem;
+    }
+    .bar-row .bar-lbl {
+        font-size: 0.65rem;
+        color: var(--text-muted);
+        min-width: 35px;
+        text-transform: uppercase;
+        letter-spacing: 0.3px;
+        font-weight: 600;
+    }
+    .bar-row .bar-track {
+        flex: 1;
+        height: 6px;
+        background: var(--border-tile);
+        border-radius: 3px;
+        overflow: hidden;
+    }
+    .bar-row .bar-track .bar-fill {
+        height: 100%;
+        border-radius: 3px;
+        width: 0;
+        transition: width 1.2s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+    .bar-row .bar-val {
+        font-size: 0.75rem;
+        font-weight: 700;
+        color: var(--text-primary);
+        min-width: 24px;
+        text-align: right;
+        font-family: 'Courier New', monospace;
+    }
+
+    .inc-scroll {
+        max-height: 280px;
+        overflow-y: auto;
+    }
+    .inc-scroll::-webkit-scrollbar { width: 3px; }
+    .inc-scroll::-webkit-scrollbar-track { background: transparent; }
+    .inc-scroll::-webkit-scrollbar-thumb { background: var(--border-tile); border-radius: 2px; }
+
+    .inc-row {
+        display: flex;
+        align-items: center;
+        gap: 0.6rem;
+        padding: 0.55rem 0.4rem;
+        border-bottom: 1px solid var(--border-tile);
+        border-radius: 6px;
+        transition: background 0.2s;
+    }
+    .inc-row:hover { background: var(--bg-tile); }
+    .inc-row:last-child { border-bottom: none; }
+
+    .inc-row .tag {
+        font-size: 0.6rem;
+        font-weight: 700;
+        padding: 0.15rem 0.5rem;
+        border-radius: 4px;
+        text-transform: uppercase;
+        letter-spacing: 0.3px;
+    }
+    .inc-row .tag.alto { background: rgba(220,53,69,0.15); color: #ff6b6b; }
+    .inc-row .tag.medio { background: rgba(255,193,7,0.15); color: #ffe066; }
+    .inc-row .tag.bajo { background: rgba(0,230,118,0.12); color: #00e676; }
+
+    .inc-row .txt { flex: 1; min-width: 0; }
+    .inc-row .txt .d { font-size: 0.72rem; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .inc-row .txt .m { font-size: 0.6rem; color: var(--text-muted); }
+    .inc-row .badge { font-size: 0.6rem; }
+
+    .model-strip {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.5rem;
+        margin-top: 0.75rem;
+        padding: 0.6rem 0.8rem;
+        background: rgba(15,118,110,0.04);
+        border: 1px solid rgba(15,118,110,0.08);
+        border-radius: 10px;
+        font-size: 0.65rem;
+        color: var(--text-muted);
+        flex-wrap: wrap;
+    }
+    html.dark .model-strip {
+        background: rgba(15,118,110,0.05);
+        border: 1px solid rgba(15,118,110,0.08);
+    }
+    .model-strip .btn-mini {
+        padding: 0.25rem 0.6rem;
+        font-size: 0.6rem;
+        border-radius: 6px;
+        background: rgba(15,118,110,0.1);
+        border: 1px solid rgba(15,118,110,0.15);
+        color: var(--sidebar-accent);
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+    html.dark .model-strip .btn-mini {
+        background: rgba(15,118,110,0.1);
+        border: 1px solid rgba(15,118,110,0.15);
+        color: #14b8a6;
+    }
+    .model-strip .btn-mini:hover { opacity: 0.8; }
+
+    .empty-note {
+        text-align: center;
+        padding: 1.5rem;
+        color: var(--text-muted);
+    }
+    .empty-note i { font-size: 1.5rem; }
+    .empty-note p { font-size: 0.7rem; margin-top: 0.3rem; }
+
+    .fade-up {
+        opacity: 0;
+        transform: translateY(15px);
+        animation: fade-up 0.5s ease forwards;
+    }
+    .fade-up:nth-child(1) { animation-delay: 0.03s; }
+    .fade-up:nth-child(2) { animation-delay: 0.1s; }
+    .fade-up:nth-child(3) { animation-delay: 0.17s; }
+    .fade-up:nth-child(4) { animation-delay: 0.24s; }
+    @keyframes fade-up { to { opacity: 1; transform: translateY(0); } }
+
+    @media (max-width: 992px) {
+        .stat-grid-4 { grid-template-columns: repeat(2, 1fr); }
+        .charts-pair { grid-template-columns: 1fr; }
+        .bottom-pair { grid-template-columns: 1fr; }
+        .stat-tile .tile-num { font-size: 1.3rem; }
+    }
+    @media (max-width: 576px) {
+        .stat-grid-4 { gap: 0.5rem; }
+        .stat-tile { padding: 0.8rem; }
+        .stat-tile .tile-num { font-size: 1.1rem; }
+    }
+</style>
+
+<div class="dash-wrap">
+    <div class="bg-grid"></div>
+
+    <div class="top-bar">
+        <div class="brand-title">
+            <div class="shield"><i class="bi bi-shield-check"></i></div>
+            <div>
+                <h2>
+                    Centro de Control
+                    <small><i class="bi bi-clock me-1"></i><span id="liveClock"></span> &middot; {{ total_usuarios }} usuarios registrados</small>
+                </h2>
+            </div>
+        </div>
+        <div class="d-flex align-items-center gap-3">
+            <div class="d-flex align-items-center gap-2 small" style="color:var(--text-muted);">
+                {% if current_user.foto_url %}
+                <img src="{{ url_for('static', filename=current_user.foto_url) }}" alt="" style="width:28px;height:28px;border-radius:50%;object-fit:cover;border:1px solid var(--border-color);">
+                {% else %}
+                <i class="bi bi-person-circle fs-5"></i>
+                {% endif %}
+                <span class="fw-semibold" style="color:var(--text-primary);">{{ current_user.nombre }}</span>
+                <span class="badge bg-success" style="font-size:0.6rem;">{{ current_user.rol }}</span>
+            </div>
+            <div class="risk-pulse {{ riesgo_actual.nivel_global }}">
+                <span class="live-dot"></span>
+                RIESGO {{ riesgo_actual.nivel_global|upper }}
+            </div>
+        </div>
+    </div>
+
+    <div class="stat-grid-4">
+        <div class="stat-tile fade-up">
+            <div class="tile-glow" style="background:var(--sidebar-accent);"></div>
+            <div class="tile-icon" style="color:var(--sidebar-accent);"><i class="bi bi-exclamation-triangle"></i></div>
+            <div class="tile-num" data-count="{{ total_incidentes }}">0</div>
+            <div class="tile-label">Incidentes (30 días)</div>
+        </div>
+        <div class="stat-tile fade-up">
+            <div class="tile-glow" style="background:#ff6b6b;"></div>
+            <div class="tile-icon" style="color:#ff6b6b;"><i class="bi bi-fire"></i></div>
+            <div class="tile-num" data-count="{{ altos_30d }}">0</div>
+            <div class="tile-label">Riesgo Alto</div>
+        </div>
+        <div class="stat-tile fade-up">
+            <div class="tile-glow" style="background:#ffe066;"></div>
+            <div class="tile-icon" style="color:#ffe066;"><i class="bi bi-people"></i></div>
+            <div class="tile-num" data-count="{{ reportantes_unicos }}">0</div>
+            <div class="tile-label">Vecinos Reportando</div>
+        </div>
+        <div class="stat-tile fade-up">
+            <div class="tile-glow" style="background:#4fc3f7;"></div>
+            <div class="tile-icon" style="color:#4fc3f7;"><i class="bi bi-geo-alt"></i></div>
+            <div class="tile-num" data-count="{{ riesgo_actual.zonas_altas }}">0</div>
+            <div class="tile-label">Zonas Críticas</div>
+        </div>
+    </div>
+
+    <div class="charts-pair">
+        <div class="chart-box" style="animation: fade-up 0.5s ease 0.12s forwards; opacity: 0;">
+            <div class="c-head">
+                <span><i class="bi bi-graph-up me-1" style="color:var(--sidebar-accent);"></i>Tendencia</span>
+                <small>14 días</small>
+            </div>
+            <div class="c-body"><canvas id="chartTrend"></canvas></div>
+        </div>
+        <div class="chart-box" style="animation: fade-up 0.5s ease 0.2s forwards; opacity: 0;">
+            <div class="c-head">
+                <span><i class="bi bi-pie-chart me-1" style="color:#4fc3f7;"></i>Tipos</span>
+                <small>{{ tipos_datos|length }} categorías</small>
+            </div>
+            <div class="c-body" style="height:160px;"><canvas id="chartTypes"></canvas></div>
+            <div class="mt-1 d-flex flex-wrap gap-1 justify-content-center" id="typeLegend"></div>
+        </div>
+    </div>
+
+    <div class="bottom-pair">
+        <div class="info-box" style="animation: fade-up 0.5s ease 0.28s forwards; opacity: 0;">
+            <div class="i-head">
+                <span><i class="bi bi-layers me-1" style="color:var(--sidebar-accent);"></i>Zonas de Riesgo</span>
+                <span style="font-size:0.6rem;color:rgba(255,255,255,0.25);">Predicciones IA</span>
+            </div>
+            {% set tz = riesgo_actual.zonas_altas + riesgo_actual.zonas_medias + riesgo_actual.zonas_bajas %}
+            {% if tz > 0 %}
+            <div class="bar-group">
+                <div class="bar-row">
+                    <span class="bar-lbl" style="color:#ff6b6b;">Alto</span>
+                    <div class="bar-track"><div class="bar-fill" style="background:#dc3545;" data-pct="{{ (riesgo_actual.zonas_altas / tz * 100) }}"></div></div>
+                    <span class="bar-val" style="color:#ff6b6b;">{{ riesgo_actual.zonas_altas }}</span>
+                </div>
+                <div class="bar-row">
+                    <span class="bar-lbl" style="color:#ffe066;">Medio</span>
+                    <div class="bar-track"><div class="bar-fill" style="background:#ffc107;" data-pct="{{ (riesgo_actual.zonas_medias / tz * 100) }}"></div></div>
+                    <span class="bar-val" style="color:#ffe066;">{{ riesgo_actual.zonas_medias }}</span>
+                </div>
+                <div class="bar-row">
+                    <span class="bar-lbl" style="color:#00e676;">Bajo</span>
+                    <div class="bar-track"><div class="bar-fill" style="background:#00e676;" data-pct="{{ (riesgo_actual.zonas_bajas / tz * 100) }}"></div></div>
+                    <span class="bar-val" style="color:#00e676;">{{ riesgo_actual.zonas_bajas }}</span>
+                </div>
+            </div>
+            <a href="{{ url_for('mapa.mapa', view='predicciones') }}" style="display:block;text-align:center;padding:0.45rem;border-radius:8px;font-size:0.72rem;background:var(--sidebar-active-bg);color:var(--sidebar-accent);border:1px solid;border-color:var(--sidebar-accent);text-decoration:none;transition:all 0.2s;opacity:0.7;" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.7'">
+                <i class="bi bi-map me-1"></i> Ver Mapa Predictivo
+            </a>
+            {% else %}
+            <div class="empty-note">
+                <i class="bi bi-cpu"></i>
+                <p>No hay predicciones activas</p>
+                {% if current_user.es_admin() %}
+                <button onclick="entrenarModelo()" style="padding:0.3rem 0.8rem;border-radius:6px;background:var(--sidebar-active-bg);border:1px solid var(--sidebar-accent);color:var(--sidebar-accent);font-size:0.7rem;cursor:pointer;"><i class="bi bi-play me-1"></i>Entrenar IA</button>
+                {% endif %}
+            </div>
+            {% endif %}
+            {% if current_user.es_admin() and info_modelo.entrenado %}
+            <div class="model-strip">
+                <span><i class="bi bi-clock-history me-1"></i>{{ info_modelo.mensaje }}</span>
+                <button class="btn-mini" onclick="entrenarModelo()"><i class="bi bi-arrow-repeat me-1"></i>Re-entrenar</button>
+            </div>
+            {% endif %}
+        </div>
+
+        <div class="info-box" style="animation: fade-up 0.5s ease 0.36s forwards; opacity: 0;">
+            <div class="i-head">
+                <span><i class="bi bi-lightning me-1" style="color:#ffe066;"></i>Últimos Incidentes</span>
+                <a href="{{ url_for('incidentes.lista_incidentes') }}">Ver todos &rarr;</a>
+            </div>
+            <div class="inc-scroll">
+                {% for inc in ultimos_incidentes %}
+                <div class="inc-row">
+                    <span class="tag {{ inc.riesgo_nivel }}">{{ inc.tipo[:8] }}</span>
+                    <div class="txt">
+                        <div class="d">{{ inc.descripcion[:40] if inc.descripcion else 'Sin descripción' }}</div>
+                        <div class="m">{{ inc.fecha_hora|bolivia if inc.fecha_hora else '' }}</div>
+                    </div>
+                    {% if inc.verificado %}<i class="bi bi-check-circle-fill" style="color:var(--sidebar-accent);font-size:0.7rem;"></i>{% endif %}
+                </div>
+                {% else %}
+                <div class="empty-note"><i class="bi bi-inbox"></i><p>No hay incidentes</p></div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+<span id="adminChartData"
+  data-lbls='{{ tendencia_datos|map(attribute="fecha")|list|tojson }}'
+  data-vals='{{ tendencia_datos|map(attribute="total")|list|tojson }}'
+  data-tl='{{ tipos_datos|map(attribute="tipo")|list|tojson }}'
+  data-td='{{ tipos_datos|map(attribute="total")|list|tojson }}'
+  hidden></span>
+{% endblock %}
+{% block extra_scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    var cd = document.getElementById('adminChartData');
+    var lbls = JSON.parse(cd.dataset.lbls);
+    var vals = JSON.parse(cd.dataset.vals);
+    var tl = JSON.parse(cd.dataset.tl);
+    var td = JSON.parse(cd.dataset.td);
+    document.querySelectorAll('.stat-tile .tile-num[data-count]').forEach(function(el) {
+        var target = parseInt(el.dataset.count) || 0;
+        if (target > 0) {
+            el.textContent = '0';
+            var step = Math.max(1, Math.floor(target / 25));
+            var cur = 0;
+            var iv = setInterval(function() {
+                cur += step;
+                if (cur >= target) { cur = target; clearInterval(iv); }
+                el.textContent = cur;
+            }, 20);
+        }
+    });
+
+    new Chart(document.getElementById('chartTrend'), {
+        type: 'line',
+        data: {
+            labels: lbls,
+            datasets: [{
+                data: vals,
+                borderColor: 'var(--sidebar-accent)',
+                backgroundColor: function(c) {
+                    var g = c.chart.ctx.createLinearGradient(0,0,0,200);
+                    g.addColorStop(0,'rgba(15,118,110,0.2)');
+                    g.addColorStop(1,'rgba(15,118,110,0)');
+                    return g;
+                },
+                borderWidth: 2.5,
+                fill: true,
+                tension: 0.4,
+                pointRadius: function(c) { return c.dataIndex === vals.length-1 ? 5 : 2; },
+                pointBackgroundColor: function(c) { return c.dataIndex === vals.length-1 ? 'var(--sidebar-accent)' : 'rgba(15,118,110,0.4)'; },
+                pointBorderColor: function(c) { return c.dataIndex === vals.length-1 ? '#fff' : 'transparent'; },
+                pointBorderWidth: function(c) { return c.dataIndex === vals.length-1 ? 2 : 0; },
+            }]
+        },
+            options: {
+                responsive: true, maintainAspectRatio: false,
+                animation: { duration: 1000, easing: 'easeOutQuart' },
+                plugins: { legend: { display: false },
+                    tooltip: { backgroundColor: 'rgba(128,128,128,0.15)', titleColor: '#1a1a2e', bodyColor: '#334155', borderColor: 'var(--sidebar-accent)', borderWidth: 1, padding: 8, cornerRadius: 8 }
+                },
+                scales: {
+                    y: { beginAtZero: true, ticks: { stepSize: 1, color: 'var(--text-muted)', font: { size: 9 } }, grid: { color: 'var(--border-color)' } },
+                    x: { ticks: { color: 'var(--text-muted)', font: { size: 8 }, maxTicksLimit: 7 }, grid: { display: false } }
+                }
+            }
+    });
+
+    var pal = ['#dc3545','#ffc107','#0d6efd','#0f766e','#6610f2','#fd7e14','#6f42c1','#e83e8c','#17a2b8','#20c997'];
+    new Chart(document.getElementById('chartTypes'), {
+        type: 'doughnut',
+        data: {
+            labels: tl,
+            datasets: [{
+                data: td,
+                backgroundColor: pal.slice(0, tl.length),
+                borderColor: 'rgba(7,7,20,0.6)',
+                borderWidth: 2,
+                hoverOffset: 5,
+            }]
+        },
+        options: {
+            responsive: true, maintainAspectRatio: false,
+            cutout: '72%',
+            animation: { animateRotate: true, duration: 900 },
+            plugins: {
+                legend: { display: false },
+                tooltip: { backgroundColor: 'rgba(128,128,128,0.15)', titleColor: '#1a1a2e', bodyColor: '#334155', borderColor: 'var(--sidebar-accent)', borderWidth: 1, padding: 8, cornerRadius: 8 }
+            }
+        }
+    });
+    var root = document.documentElement;
+    var legColor = getComputedStyle(root).getPropertyValue('--text-muted').trim();
+    var numColor = getComputedStyle(root).getPropertyValue('--text-primary').trim();
+    var leg = tl.map(function(l,i){ return '<span style="display:inline-flex;align-items:center;gap:3px;font-size:0.6rem;color:'+legColor+';"><span style="width:7px;height:7px;border-radius:50%;background:'+pal[i]+';display:inline-block;"></span>'+l+' <strong style="color:'+numColor+';">'+td[i]+'</strong></span>'; }).join('');
+    document.getElementById('typeLegend').innerHTML = leg;
+
+    setTimeout(function() {
+        document.querySelectorAll('.bar-fill').forEach(function(b) { b.style.width = b.dataset.pct + '%'; });
+    }, 400);
+});
+</script>
+{% endblock %}

@@ -1,0 +1,605 @@
+{% extends "base.html" %}
+{% block title %}SEGURIDAD VECINAL{% endblock %}
+{% block content_public %}
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+
+/* ── PROGRESS BAR ── */
+#top-progress{position:fixed;top:0;left:0;height:2px;background:linear-gradient(90deg,#0f766e,#14b8a6);z-index:9999;width:0;transition:width 0.1s}
+
+/* ── HERO ── */
+.hero{
+  background:linear-gradient(135deg,#070c0c 0%,#0a1212 40%,#0d1817 70%,#0a1a18 100%);
+  min-height:100vh;display:flex;align-items:center;position:relative;overflow:hidden;color:#fff
+}
+.hero .orb{
+  position:absolute;border-radius:50%;filter:blur(80px);pointer-events:none;opacity:0.5;
+  animation:orbFloat 12s ease-in-out infinite
+}
+.hero .orb.o1{width:500px;height:500px;background:rgba(15,118,110,0.1);top:-100px;right:-100px}
+.hero .orb.o2{width:400px;height:400px;background:rgba(15,118,110,0.08);bottom:-120px;left:-80px;animation-delay:-4s}
+.hero .orb.o3{width:300px;height:300px;background:rgba(220,53,69,0.05);top:40%;left:60%;animation-delay:-8s}
+@keyframes orbFloat{0%,100%{transform:translate(0,0)scale(1)}33%{transform:translate(40px,-30px)scale(1.1)}66%{transform:translate(-20px,20px)scale(0.95)}}
+
+.tech-grid{
+  position:absolute;inset:0;
+  background-image:linear-gradient(rgba(15,118,110,0.03)1px,transparent 1px),linear-gradient(90deg,rgba(15,118,110,0.03)1px,transparent 1px);
+  background-size:50px 50px;pointer-events:none;z-index:0;animation:gridScroll 25s linear infinite
+}
+@keyframes gridScroll{0%{transform:translate(0,0)}100%{transform:translate(50px,50px)}}
+
+.particle{
+  position:absolute;border-radius:50%;pointer-events:none;z-index:1;
+  animation:particleFloat linear infinite
+}
+@keyframes particleFloat{
+  0%{transform:translateY(105vh)rotate(0deg);opacity:0}
+  8%{opacity:0.6}
+  92%{opacity:0.6}
+  100%{transform:translateY(-5vh)rotate(720deg);opacity:0}
+}
+
+.hero-content{position:relative;z-index:3}
+
+.badge-top{
+  display:inline-flex;align-items:center;gap:0.4rem;
+  padding:0.35rem 1rem;border-radius:50px;font-size:0.72rem;font-weight:600;
+  background:rgba(15,118,110,0.08);color:#14b8a6;border:1px solid rgba(15,118,110,0.15);
+  backdrop-filter:blur(8px);margin-bottom:1.2rem;letter-spacing:0.3px
+}
+.badge-top .live{width:6px;height:6px;border-radius:50%;background:#14b8a6;animation:liveBlink 1.2s step-end infinite}
+@keyframes liveBlink{50%{opacity:0}}
+
+.hero h1{font-weight:800;font-size:clamp(2rem,5vw,3.2rem);line-height:1.12;margin-bottom:0.4rem}
+.hero h1 .grad{background:linear-gradient(135deg,#0f766e 0%,#14b8a6 50%,#0f766e 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+
+.typewriter-wrap{font-size:clamp(0.85rem,1.6vw,1.05rem);font-weight:300;color:rgba(255,255,255,0.55);min-height:1.6rem;margin-bottom:0.6rem}
+.typewriter-wrap .cursor{color:#14b8a6;animation:blink 0.8s step-end infinite;font-weight:100}
+@keyframes blink{50%{opacity:0}}
+
+.hero .desc{font-size:clamp(0.8rem,1.3vw,0.95rem);opacity:0.5;max-width:540px;line-height:1.7;margin-bottom:1.5rem}
+
+.btn-glow{
+  padding:0.8rem 2.5rem;border-radius:50px;font-weight:600;font-size:0.95rem;
+  border:none;background:linear-gradient(135deg,#0f766e,#14b8a6);color:#000;
+  transition:all 0.3s;position:relative;overflow:hidden;display:inline-flex;align-items:center;gap:0.5rem;
+  text-decoration:none
+}
+.btn-glow:hover{transform:translateY(-3px);box-shadow:0 10px 35px rgba(15,118,110,0.3);color:#000}
+.btn-ghost{
+  padding:0.8rem 2rem;border-radius:50px;font-weight:500;font-size:0.9rem;
+  border:1px solid rgba(255,255,255,0.12);background:transparent;color:rgba(255,255,255,0.7);
+  transition:all 0.3s;display:inline-flex;align-items:center;gap:0.5rem;text-decoration:none
+}
+.btn-ghost:hover{background:rgba(255,255,255,0.04);border-color:rgba(255,255,255,0.2);color:#fff}
+
+/* ── STATS ROW ── */
+.stat-tile{text-align:center;padding:0.6rem 0.5rem;position:relative}
+.stat-tile .num{font-size:clamp(1.5rem,3.5vw,2rem);font-weight:800;font-family:'Courier New',monospace;background:linear-gradient(135deg,#0f766e,#14b8a6);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.stat-tile .lbl{font-size:0.72rem;opacity:0.5;margin-top:0.05rem;letter-spacing:0.3px}
+
+/* ── HERO CANVAS ── */
+.hero-visual{position:relative;display:flex;flex-direction:column;justify-content:center;min-height:420px}
+.hero-visual canvas{width:100%;height:420px;display:block;border-radius:16px}
+.hero-visual .phase-label{
+  text-align:center;margin-top:0.3rem;font-size:0.8rem;font-weight:500;
+  min-height:1.2rem;opacity:0.6;letter-spacing:0.3px
+}
+
+/* ── ACTIVITY TICKER ── */
+.activity-section{
+  padding:3rem 0;background:#0b0e0e;color:#fff;position:relative;
+  border-top:1px solid rgba(255,255,255,0.04);border-bottom:1px solid rgba(255,255,255,0.04)
+}
+.activity-section .sec-label{font-size:0.65rem;text-transform:uppercase;letter-spacing:2px;opacity:0.3;margin-bottom:0.2rem}
+.activity-section .sec-title{font-size:1.1rem;font-weight:700;margin-bottom:1.2rem}
+.act-feed{display:flex;flex-direction:column;gap:0.35rem;max-height:200px;overflow:hidden;position:relative}
+.act-feed::after{content:'';position:absolute;bottom:0;left:0;right:0;height:40px;background:linear-gradient(transparent,#0b0e0e);pointer-events:none}
+.act-item{
+  display:flex;align-items:center;gap:0.6rem;padding:0.5rem 0.7rem;
+  border-radius:8px;background:rgba(255,255,255,0.02);font-size:0.75rem;
+  animation:actSlide 0.4s ease forwards;opacity:0;transform:translateX(-10px)
+}
+.act-item .act-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.act-item .act-txt{flex:1;color:rgba(255,255,255,0.7)}
+.act-item .act-txt strong{color:#fff;font-weight:600}
+.act-item .act-time{font-size:0.6rem;color:rgba(255,255,255,0.25);flex-shrink:0}
+@keyframes actSlide{to{opacity:1;transform:translateX(0)}}
+
+.act-summary{
+  display:flex;gap:1.5rem;flex-wrap:wrap;margin-top:0.8rem
+}
+.act-summary span{font-size:0.65rem;color:rgba(255,255,255,0.35)}
+.act-summary span strong{color:rgba(255,255,255,0.7);font-weight:600}
+
+/* ── FEATURES ── */
+.features-section{
+  padding:4.5rem 0;background:linear-gradient(180deg,#0b0e0e,#0a1212);color:#fff;position:relative
+}
+.features-section .sec-label{font-size:0.65rem;text-transform:uppercase;letter-spacing:2px;opacity:0.3;text-align:center;margin-bottom:0.15rem}
+.features-section .sec-title{text-align:center;font-weight:700;font-size:clamp(1.3rem,2.5vw,1.8rem);margin-bottom:0.5rem}
+.features-section .sec-sub{text-align:center;opacity:0.4;font-size:0.85rem;margin-bottom:2.5rem}
+
+.feature-card{
+  background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.05);
+  border-radius:1rem;padding:2rem 1.5rem;text-align:center;height:100%;
+  transition:all 0.4s ease;position:relative;overflow:hidden;
+  transform-style:preserve-3d;perspective:1000px
+}
+.feature-card::before{
+  content:'';position:absolute;inset:-1px;border-radius:inherit;
+  background:linear-gradient(135deg,transparent 30%,#0f766e,#14b8a6,transparent 70%);
+  background-size:300% 300%;z-index:-1;opacity:0;transition:opacity 0.4s;
+  animation:ringSpin 4s linear infinite;pointer-events:none
+}
+@keyframes ringSpin{0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%}}
+.feature-card:hover::before{opacity:1}
+.feature-card::after{content:'';position:absolute;inset:0;background:rgba(11,14,14,0.95);border-radius:inherit;z-index:-1}
+.feature-card:hover{transform:translateY(-6px);border-color:rgba(15,118,110,0.12);box-shadow:0 20px 50px rgba(0,0,0,0.4)}
+.feature-card .ficon{
+  width:64px;height:64px;border-radius:50%;background:rgba(15,118,110,0.06);
+  display:flex;align-items:center;justify-content:center;margin:0 auto 1rem;
+  font-size:1.6rem;color:#14b8a6;transition:all 0.4s
+}
+.feature-card:hover .ficon{background:rgba(15,118,110,0.12);transform:scale(1.08)translateZ(20px)}
+.feature-card h5{font-weight:700;margin-bottom:0.6rem;font-size:1rem}
+.feature-card p{opacity:0.5;font-size:0.82rem;line-height:1.6}
+
+/* ── FADE IN ── */
+.fade-up{opacity:0;transform:translateY(25px);transition:all 0.7s ease}
+.fade-up.visible{opacity:1;transform:translateY(0)}
+
+/* ── FOOTER ── */
+.footer-idx{
+  background:#070c0c;padding:2rem 0;text-align:center;color:rgba(255,255,255,0.3);font-size:0.78rem;
+  border-top:1px solid rgba(255,255,255,0.03)
+}
+
+@media(max-width:768px){
+  .hero{min-height:85vh}
+  .feature-card{padding:1.5rem 1rem}
+  .hero-visual canvas{height:300px}
+}
+</style>
+
+<div class="hero" id="hero">
+  <div class="orb o1"></div>
+  <div class="orb o2"></div>
+  <div class="orb o3"></div>
+  <div id="particles"></div>
+  <div class="tech-grid"></div>
+  <div id="top-progress"></div>
+
+  <div class="container hero-content">
+    <div class="row align-items-center g-4">
+      <div class="col-6">
+        <div class="badge-top"><span class="live"></span> Plataforma Predictiva <span style="opacity:0.4;margin:0 0.3rem;">·</span> Comunitaria</div>
+        <h1>
+          Seguridad Vecinal<br>
+          <span class="grad">con Inteligencia</span>
+        </h1>
+        <div class="typewriter-wrap">
+          <span id="tw"></span><span class="cursor">|</span>
+        </div>
+        <p class="desc">
+          Monitorea, reporta y visualiza incidentes en tu vecindario en tiempo real.
+        </p>
+        <div class="d-flex gap-3 flex-wrap mb-3">
+          <a href="{{ url_for('auth.login') }}" class="btn-glow"><i class="bi bi-box-arrow-in-right"></i>Ingresar</a>
+          <a href="{{ url_for('auth.register') }}" class="btn-ghost"><i class="bi bi-person-plus"></i>Crear Cuenta</a>
+        </div>
+        <div class="row mt-3">
+          <div class="col-4 stat-tile"><div class="num" id="sInc">0</div><div class="lbl">Incidentes</div></div>
+          <div class="col-4 stat-tile"><div class="num" id="sUsr">0</div><div class="lbl">Vecinos</div></div>
+          <div class="col-4 stat-tile"><div class="num" id="sPred">0</div><div class="lbl">Alertas</div></div>
+        </div>
+      </div>
+      <div class="col-6 hero-visual">
+        <canvas id="pulseCanvas"></canvas>
+        <div class="phase-label" id="phaseLabel">🛡️ Red de seguridad activa</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<div class="activity-section" id="activity">
+  <div class="container">
+    <div class="row align-items-center g-3">
+      <div class="col-md-5">
+        <div class="sec-label">· Actividad Reciente</div>
+        <div class="sec-title"> Movimiento en tu comunidad</div>
+        <div class="act-summary">
+          <span>🕐 <strong id="lastIncTime">—</strong></span>
+          <span>📊 <strong id="todayCount">0</strong> hoy</span>
+          <span>🏷️ <strong id="topType">—</strong> más común</span>
+        </div>
+      </div>
+      <div class="col-md-7">
+        <div class="act-feed" id="actFeed"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="features-section" id="features">
+  <div class="container">
+    <div class="sec-label">· Pilares del Sistema</div>
+    <div class="sec-title">¿Cómo funciona?</div>
+    <p class="sec-sub">Tres pilares para mantener tu comunidad segura</p>
+    <div class="row g-3">
+      <div class="col-md-4 fade-up">
+        <div class="feature-card" data-tilt>
+          <div class="ficon"><i class="bi bi-map"></i></div>
+          <h5>Mapa Predictivo</h5>
+          <p>Visualiza en tiempo real las zonas de riesgo con heatmaps y predicciones basadas en machine learning.</p>
+        </div>
+      </div>
+      <div class="col-md-4 fade-up">
+        <div class="feature-card" data-tilt>
+          <div class="ficon"><i class="bi bi-megaphone"></i></div>
+          <h5>Alertas Inteligentes</h5>
+          <p>Notificaciones automáticas cuando ocurren incidentes críticos cerca de tu zona. Actúa a tiempo.</p>
+        </div>
+      </div>
+      <div class="col-md-4 fade-up">
+        <div class="feature-card" data-tilt>
+          <div class="ficon"><i class="bi bi-people"></i></div>
+          <h5>Colaboración Vecinal</h5>
+          <p>Reporta incidentes y contribuye a la base de datos comunitaria. Juntos construimos un vecindario seguro.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="footer-idx">
+  <div class="container">
+    <i class="bi bi-shield-check" style="color:#14b8a6;margin-right:0.4rem;"></i>
+    SEGURIDAD VECINAL &mdash; <span id="year"></span>
+  </div>
+</div>
+
+<script>
+var twPhrases = [
+  "Monitorea tu comunidad en tiempo real",
+  "Predice riesgos antes de que ocurran",
+  "Protege tu vecindario con IA",
+  "Datos que transforman comunidades",
+  "Alertas inteligentes al instante"
+];
+
+function particles(){
+  var c=document.getElementById('particles');
+  for(var i=0;i<30;i++){
+    var p=document.createElement('div');p.className='particle';
+    p.style.left=Math.random()*100+'%';
+    var s=2+Math.random()*4;p.style.width=s+'px';p.style.height=s+'px';
+    p.style.background=['rgba(15,118,110,0.5)','rgba(20,184,166,0.3)','rgba(255,255,255,0.3)'][Math.floor(Math.random()*3)];
+    p.style.animationDuration=(18+Math.random()*24)+'s';
+    p.style.animationDelay=(Math.random()*15)+'s';
+    c.appendChild(p);
+  }
+}
+
+function animateNum(id,target){
+  var el=document.getElementById(id),cur=0,step=Math.max(1,Math.floor(target/35));
+  var iv=setInterval(function(){cur+=step;if(cur>=target){cur=target;clearInterval(iv)}el.textContent=cur},20);
+}
+
+function typewriter(){
+  var el=document.getElementById('tw');if(!el)return;
+  var i=0,ci=0,del=false;
+  function tick(){
+    var p=twPhrases[i];
+    el.textContent=del?p.substring(0,ci-1):p.substring(0,ci+1);
+    del?ci--:ci++;
+    if(!del&&ci===p.length){del=true;setTimeout(tick,1800);return}
+    if(del&&ci===0){del=false;i=(i+1)%twPhrases.length;setTimeout(tick,400);return}
+    setTimeout(tick,del?35:70);
+  }
+  tick();
+}
+
+// Activity feed – simulated
+var fakeActs=[
+  "Robo reportado en Av. Bolivar",
+  "Zona de riesgo alto en barrio Norte",
+  "Incidente verificado por junta vecinal",
+  "Alerta enviada a 12 vecinos cercanos",
+  "Movimiento sospechoso en calle Sucre",
+  "Predicción actualizada para zona Centro",
+  "Nuevo incidente: vandalismo en parque",
+  "Reporte de alumbrado dañado en Oeste"
+];
+var actColors={rojo:'#dc3545',amarillo:'#ffc107',verde:'#0f766e',cyan:'#0dcaf0'};
+var actKeys=['rojo','amarillo','verde','cyan'];
+function addAct(){
+  var feed=document.getElementById('actFeed');
+  if(!feed)return;
+  var txt=fakeActs[Math.floor(Math.random()*fakeActs.length)];
+  var color=actColors[actKeys[Math.floor(Math.random()*actKeys.length)]];
+  var mins=Math.floor(Math.random()*59);
+  var item=document.createElement('div');item.className='act-item';
+  item.innerHTML='<span class="act-dot" style="background:'+color+'"></span><span class="act-txt">'+txt+'</span><span class="act-time">hace '+mins+'min</span>';
+  feed.insertBefore(item,feed.firstChild);
+  if(feed.children.length>8)feed.removeChild(feed.lastChild);
+}
+
+// Progress bar
+window.addEventListener('scroll',function(){
+  var h=document.documentElement;
+  var p=(h.scrollTop/(h.scrollHeight-h.clientHeight))*100;
+  document.getElementById('top-progress').style.width=p+'%';
+});
+
+// Tilt effect
+document.querySelectorAll('[data-tilt]').forEach(function(c){
+  c.addEventListener('mousemove',function(e){
+    var r=this.getBoundingClientRect();
+    var x=(e.clientX-r.left)/r.width-0.5,y=(e.clientY-r.top)/r.height-0.5;
+    this.style.transform='perspective(600px) rotateY('+(x*8)+'deg) rotateX('+(-y*8)+'deg) translateY(-6px)';
+  });
+  c.addEventListener('mouseleave',function(){this.style.transform='perspective(600px) rotateY(0deg) rotateX(0deg) translateY(0)'});
+});
+
+document.addEventListener('DOMContentLoaded',function(){
+  document.getElementById('year').textContent=new Date().getFullYear();
+  particles();typewriter();
+
+  var obs=new IntersectionObserver(function(e){e.forEach(function(e){if(e.isIntersecting)e.target.classList.add('visible')})},{threshold:0.08});
+  document.querySelectorAll('.fade-up').forEach(function(el){obs.observe(el)});
+
+  // Stats from API
+  fetch('/incidentes/api/stats/resumen').then(function(r){return r.json()}).then(function(d){animateNum('sInc',d.total_30d)}).catch(function(){document.getElementById('sInc').textContent='--'});
+  fetch('/predicciones/api/riesgo-actual').then(function(r){return r.json()}).then(function(d){animateNum('sPred',d.zonas_altas+(d.zonas_medias||0))}).catch(function(){});
+  fetch('/auth/api/check').then(function(r){return r.json()}).then(function(d){
+    // just ignore, statUsuarios stays simulated
+  }).catch(function(){});
+  animateNum('sUsr',Math.floor(120+Math.random()*80));
+  document.getElementById('todayCount').textContent=Math.floor(8+Math.random()*15);
+  document.getElementById('topType').textContent=['Robo','Sospechoso','Vandalismo'][Math.floor(Math.random()*3)];
+  document.getElementById('lastIncTime').textContent='Hace '+Math.floor(5+Math.random()*60)+' min';
+
+  // Activity ticker
+  for(var i=0;i<5;i++)setTimeout(function(){addAct()},i*600);
+  setInterval(addAct,8000);
+});
+
+// ── Safety Pulse Canvas ──
+(function(){
+  var c=document.getElementById('pulseCanvas');
+  if(!c)return;
+  var ctx=c.getContext('2d');
+  var W,H,cx,cy,dpr;
+  function resize(force){
+    var p=c.parentElement;
+    dpr=window.devicePixelRatio||1;
+    W=p.clientWidth;H=420;
+    if(W<10)W=400;
+    c.width=W*dpr;c.height=H*dpr;
+    c.style.width=W+'px';c.style.height=H+'px';
+    ctx.setTransform(dpr,0,0,dpr,0,0);
+    cx=W/2;cy=H/2;
+  }
+  resize(true);
+  window.addEventListener('resize',function(){resize();initNodes()});
+
+  var N=16;
+  var nodes=[];
+  function initNodes(){
+    nodes=[];
+    baseR=Math.min(W,H)*0.38;
+    for(var i=0;i<N;i++){
+      var a=(i/N)*Math.PI*2-Math.PI/2;
+      var x=cx+Math.cos(a)*baseR;
+      var y=cy+Math.sin(a)*baseR;
+      var labels=['Robo','Sospechoso','Vandalismo','Alumbrado','Ruido','Violencia','Accidente','Robo','Violencia','Alumbrado','Sospechoso','Ruido','Robo','Accidente','Vandalismo','Alumbrado'];
+      var label=labels[i];
+      nodes.push({x:x,y:y,ox:x,oy:y,label:label,glow:0,incident:0,incTimer:0});
+    }
+  }
+  initNodes();
+
+  // Connections: ring + some cross connections
+  var edges=[];
+  for(var i=0;i<N;i++){
+    edges.push({from:i,to:(i+1)%N});
+    if(i%3===0)edges.push({from:i,to:(i+4)%N});
+    if(i%4===0)edges.push({from:i,to:(i+6)%N});
+  }
+
+  var phases=['📱 Reportando','🧠 Analizando','📡 Alertando','🛡️ Protegiendo'];
+  var phaseIdx=0,phaseTimer=0;
+  var pulses=[]; // {from,to,progress,speed,color,radius}
+  var waves=[];  // {x,y,radius,maxR,opacity,color}
+
+  function spawnPulse(){
+    var idx=Math.floor(Math.random()*edges.length);
+    var e=edges[idx];
+    pulses.push({
+      from:e.from,to:e.to,progress:0,
+      speed:0.004+Math.random()*0.006,
+      color:['#0f766e','#14b8a6','#2dd4bf','#fbbf24'][Math.floor(Math.random()*4)],
+      radius:2.5+Math.random()*2
+    });
+  }
+
+  function spawnWave(x,y,color,maxR){
+    waves.push({x:x,y:y,radius:0,maxR:maxR||160,opacity:0.6,color:color||'rgba(20,184,166,0.3)'});
+  }
+
+  // Phase cycle
+  setInterval(function(){
+    phaseIdx=(phaseIdx+1)%phases.length;
+    document.getElementById('phaseLabel').textContent=phases[phaseIdx]+'...';
+    // Spawn a protection wave on phase change
+    spawnWave(cx,cy,'rgba(20,184,166,0.2)',200);
+    if(phaseIdx===3){
+      // Protection phase: heal all incidents
+      nodes.forEach(function(n){n.incident=0;n.glow=1});
+      spawnWave(cx,cy,'rgba(45,212,191,0.25)',280);
+    }
+  },5000);
+
+  // Initial pulses
+  for(var i=0;i<5;i++)setTimeout(spawnPulse,i*800);
+
+  var phaseLabel=document.getElementById('phaseLabel');
+
+  function draw(t){
+    ctx.clearRect(0,0,W,H);
+
+    // Connections
+    ctx.lineWidth=1;
+    edges.forEach(function(e){
+      var fn=nodes[e.from],tn=nodes[e.to];
+      ctx.beginPath();
+      ctx.moveTo(fn.x,fn.y);
+      ctx.lineTo(tn.x,tn.y);
+      ctx.strokeStyle='rgba(255,255,255,0.05)';
+      ctx.stroke();
+    });
+
+    // Pulses along connections
+    pulses=pulses.filter(function(p){
+      p.progress+=p.speed;
+      if(p.progress>=1)return false;
+      var fn=nodes[p.from],tn=nodes[p.to];
+      var x=fn.x+(tn.x-fn.x)*p.progress;
+      var y=fn.y+(tn.y-fn.y)*p.progress;
+      ctx.beginPath();
+      ctx.arc(x,y,p.radius,0,Math.PI*2);
+      ctx.fillStyle=p.color;
+      ctx.fill();
+      ctx.beginPath();
+      ctx.arc(x,y,p.radius+3,0,Math.PI*2);
+      ctx.fillStyle=p.color.replace(')',',0.15)').replace('rgb','rgba');
+      ctx.fill();
+      return true;
+    });
+
+    // Spawn new pulses periodically
+    if(Math.random()<0.03)spawnPulse();
+
+    // Waves
+    waves=waves.filter(function(w){
+      w.radius+=1.5;
+      w.opacity-=0.005;
+      if(w.opacity<=0||w.radius>=w.maxR)return false;
+      ctx.save();
+      ctx.globalAlpha=w.opacity;
+      ctx.beginPath();
+      ctx.arc(w.x,w.y,w.radius,0,Math.PI*2);
+      ctx.strokeStyle=w.color;
+      ctx.lineWidth=1.5;
+      ctx.stroke();
+      ctx.restore();
+      return true;
+    });
+
+    // Random incidents
+    if(Math.random()<0.005){
+      var ni=Math.floor(Math.random()*N);
+      if(!nodes[ni].incident){
+        nodes[ni].incident=1;
+        nodes[ni].incTimer=300;
+        spawnWave(nodes[ni].x,nodes[ni].y,'rgba(220,53,69,0.3)',120);
+      }
+    }
+
+    // Nodes
+    nodes.forEach(function(n,i){
+      // Incident timer
+      if(n.incident){
+        n.incTimer--;
+        if(n.incTimer<=0){
+          n.incident=0;
+          n.glow=1;
+          spawnWave(n.x,n.y,'rgba(20,184,166,0.25)',80);
+        }
+      }
+      // Glow decay
+      if(n.glow>0)n.glow-=0.005;
+      if(n.glow<0)n.glow=0;
+
+      // Subtle idle float
+      var floatA=Math.sin(t*0.0006+i*1.2)*4;
+      var floatR=Math.cos(t*0.0005+i*0.9)*3;
+      n.x=n.ox+floatR;
+      n.y=n.oy+floatA;
+
+      // Glow circle
+      var gr=16+(n.glow*8)+(n.incident?4:0);
+      var g=ctx.createRadialGradient(n.x,n.y,0,n.x,n.y,gr);
+      if(n.incident){
+        g.addColorStop(0,'rgba(220,53,69,0.4)');
+        g.addColorStop(1,'rgba(220,53,69,0)');
+      }else{
+        g.addColorStop(0,'rgba(20,184,166,'+(0.08+n.glow*0.2)+')');
+        g.addColorStop(1,'rgba(20,184,166,0)');
+      }
+      ctx.fillStyle=g;
+      ctx.beginPath();
+      ctx.arc(n.x,n.y,gr,0,Math.PI*2);
+      ctx.fill();
+
+      // Node dot
+      ctx.beginPath();
+      ctx.arc(n.x,n.y,4.5,0,Math.PI*2);
+      ctx.fillStyle=n.incident?'#dc3545':n.glow>0?'#2dd4bf':'rgba(255,255,255,0.5)';
+      ctx.fill();
+      if(n.incident){
+        ctx.beginPath();
+        ctx.arc(n.x,n.y,9,0,Math.PI*2);
+        ctx.fillStyle='rgba(220,53,69,0.15)';
+        ctx.fill();
+      }
+    });
+
+    // Center shield
+    var shieldR=28+Math.sin(t*0.002)*3;
+    var sg=ctx.createRadialGradient(cx,cy,0,cx,cy,shieldR);
+    sg.addColorStop(0,'rgba(20,184,166,0.2)');
+    sg.addColorStop(0.5,'rgba(15,118,110,0.08)');
+    sg.addColorStop(1,'rgba(15,118,110,0)');
+    ctx.fillStyle=sg;
+    ctx.beginPath();
+    ctx.arc(cx,cy,shieldR,0,Math.PI*2);
+    ctx.fill();
+
+    // Shield icon (drawn instead of emoji for crispness)
+    ctx.save();
+    ctx.translate(cx,cy);
+    var s=24;
+    ctx.strokeStyle='#14b8a6';
+    ctx.lineWidth=2.5;
+    ctx.lineCap='round';
+    ctx.lineJoin='round';
+    // Simple shield shape
+    ctx.beginPath();
+    ctx.moveTo(0,-s*0.7);
+    ctx.lineTo(s*0.7,-s*0.4);
+    ctx.lineTo(s*0.7,s*0.15);
+    ctx.quadraticCurveTo(s*0.7,s*0.6,0,s*0.85);
+    ctx.quadraticCurveTo(-s*0.7,s*0.6,-s*0.7,s*0.15);
+    ctx.lineTo(-s*0.7,-s*0.4);
+    ctx.closePath();
+    ctx.stroke();
+    // Checkmark
+    ctx.beginPath();
+    ctx.moveTo(-s*0.25,0.05);
+    ctx.lineTo(-s*0.05,s*0.2);
+    ctx.lineTo(s*0.3,-s*0.15);
+    ctx.strokeStyle='#2dd4bf';
+    ctx.lineWidth=2;
+    ctx.stroke();
+    ctx.restore();
+
+    requestAnimationFrame(draw);
+  }
+  requestAnimationFrame(draw);
+})();
+</script>
+{% endblock %}

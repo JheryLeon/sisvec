@@ -1,0 +1,207 @@
+{% extends "base.html" %}
+{% block title %}Incidentes - SEGURIDAD VECINAL{% endblock %}
+{% block content %}
+<style>
+.inc-page .card{border-radius:16px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,0.04)}
+.inc-page .card-header{background:transparent;border-bottom:1px solid rgba(0,0,0,0.05);font-weight:600;padding:1rem 1.25rem}
+.inc-page .filter-row{display:flex;flex-wrap:wrap;gap:0.5rem;margin-bottom:1rem}
+.inc-page .filter-row .form-select-sm{font-size:0.8rem;border-radius:10px;border:1px solid rgba(0,0,0,0.08);min-width:140px}
+
+/* --- Card layout for mobile (replaces table) --- */
+.inc-cards-mobile{display:none}
+@media(max-width:767px){
+  .inc-table-desktop{display:none}
+  .inc-cards-mobile{display:flex;flex-direction:column;gap:0.6rem}
+}
+
+.inc-m-card{
+  background:#fff;border:1px solid rgba(0,0,0,0.04);border-radius:14px;
+  padding:0.8rem 0.9rem;transition:all 0.2s;position:relative;box-shadow:0 1px 4px rgba(0,0,0,0.02)
+}
+.inc-m-card:active{transform:scale(0.99)}
+.inc-m-card .mc-top{display:flex;align-items:center;justify-content:space-between;gap:0.5rem;margin-bottom:0.35rem}
+.inc-m-card .mc-top .mc-num{
+  display:inline-flex;align-items:center;gap:0.3rem;font-weight:700;font-size:0.85rem;color:#1a1a2e;
+  text-decoration:none
+}
+.inc-m-card .mc-top .mc-num:hover{color:var(--sidebar-accent)}
+.inc-m-card .mc-top .mc-risk{font-size:0.6rem;font-weight:700;padding:0.15rem 0.5rem;border-radius:4px;text-transform:uppercase;letter-spacing:0.3px}
+.inc-m-card .mc-top .mc-risk.alto{background:rgba(220,53,69,0.1);color:#dc3545}
+.inc-m-card .mc-top .mc-risk.medio{background:rgba(255,193,7,0.1);color:#856404}
+.inc-m-card .mc-top .mc-risk.bajo{background:rgba(0,230,118,0.1);color:#155724}
+.inc-m-card .mc-type{
+  display:inline-block;padding:0.15rem 0.5rem;border-radius:4px;font-size:0.62rem;font-weight:600;margin-bottom:0.3rem
+}
+.inc-m-card .mc-desc{font-size:0.75rem;color:rgba(0,0,0,0.5);margin-bottom:0.4rem;line-height:1.3}
+.inc-m-card .mc-meta{display:flex;flex-wrap:wrap;gap:0.3rem 0.6rem;font-size:0.62rem;color:rgba(0,0,0,0.3);margin-bottom:0.4rem}
+.inc-m-card .mc-actions{display:flex;flex-wrap:wrap;gap:0.3rem;padding-top:0.4rem;border-top:1px solid rgba(0,0,0,0.03)}
+.inc-m-card .mc-actions .btn-sm{font-size:0.6rem;padding:0.2rem 0.6rem;border-radius:6px}
+</style>
+
+<div class="inc-page">
+<div class="card">
+  <div class="card-header d-flex flex-wrap justify-content-between align-items-center gap-2">
+    <span><i class="bi bi-list-ul me-2"></i>Todos los Incidentes</span>
+    <div>
+      <a href="{{ url_for('incidentes.reportar') }}" class="btn btn-sm btn-danger">
+        <i class="bi bi-plus"></i> Reportar
+      </a>
+    </div>
+  </div>
+  <div class="card-body">
+    <div class="filter-row">
+      <div class="btn-group btn-group-sm me-2" role="group">
+        <a href="{{ url_for('incidentes.lista_incidentes', resuelto='activos') }}" class="btn btn-sm {{ 'btn-success' if request.args.get('resuelto') == 'activos' else 'btn-outline-success' }}">Activos</a>
+        <a href="{{ url_for('incidentes.lista_incidentes', resuelto='resueltos') }}" class="btn btn-sm {{ 'btn-info' if request.args.get('resuelto') == 'resueltos' else 'btn-outline-info' }}">Resueltos</a>
+        <a href="{{ url_for('incidentes.lista_incidentes') }}" class="btn btn-sm {{ 'btn-secondary' if not request.args.get('resuelto') else 'btn-outline-secondary' }}">Todos</a>
+      </div>
+      <select id="filtroTipo" class="form-select form-select-sm" style="border-left:5px solid #6c757d;" data-color-options>
+        <option value="">Todos los tipos</option>
+        {% for t in tipos %}
+        <option value="{{ t.nombre }}" data-color="{{ t.color }}" style="border-left:4px solid {{ t.color }};padding-left:8px;">{{ t.nombre.replace('_',' ')|title }}</option>
+        {% endfor %}
+      </select>
+      <select id="filtroRiesgo" class="form-select form-select-sm">
+        <option value="">Todos los niveles</option>
+        <option value="bajo">Bajo</option>
+        <option value="medio">Medio</option>
+        <option value="alto">Alto</option>
+      </select>
+      <button class="btn btn-sm btn-outline-primary" onclick="aplicarFiltros()"><i class="bi bi-funnel"></i> Filtrar</button>
+      <button class="btn btn-sm btn-outline-secondary" onclick="limpiarFiltros()"><i class="bi bi-x"></i> Limpiar</button>
+    </div>
+
+    {% if incidentes %}
+    <!-- Desktop table -->
+    <div class="table-responsive inc-table-desktop">
+      <table class="table table-hover align-middle">
+        <thead class="table-light">
+          <tr>
+            <th>#</th>
+            <th>Tipo</th>
+            <th>Descripci&oacute;n</th>
+            <th>Ubicaci&oacute;n</th>
+            <th>Fecha</th>
+            <th>Riesgo</th>
+            <th>Estado</th>
+            {% if current_user.es_junta() or current_user.es_admin() %}<th>Acciones</th>{% endif %}
+          </tr>
+        </thead>
+        <tbody>
+          {% for inc in incidentes %}
+          <tr>
+            <td><a href="{{ url_for('incidentes.detalle', id=inc.id) }}" class="badge rounded-pill bg-dark text-white text-decoration-none fs-6 px-3 py-2">{{ pagination.total - ((page-1) * pagination.per_page) - loop.index + 1 }} {% if inc.evidencias.count() > 0 %}📸{% endif %}</a></td>
+            <td><span class="badge" data-style-bg="{{ inc.tipo_incidente.color or '#6c757d' }}">{{ inc.tipo }}</span></td>
+            <td><small>{{ (inc.descripcion[:80] if inc.descripcion else '&mdash;')|safe }}</small></td>
+            <td><small>{{ "%.4f, %.4f"|format(inc.latitud, inc.longitud) }}</small></td>
+            <td><small>{{ (inc.fecha_hora|bolivia if inc.fecha_hora else '—') }}</small></td>
+            <td><span class="badge nivel-{{ inc.riesgo_nivel }}">{{ inc.riesgo_nivel }}</span></td>
+            <td>
+              {% if inc.resuelto %}
+              <span class="badge bg-info"><i class="bi bi-check-circle"></i> Resuelto</span>
+              {% elif inc.verificado %}
+              <span class="badge bg-success"><i class="bi bi-check"></i> Verificado</span>
+              {% else %}
+              <span class="badge bg-secondary">Pendiente</span>
+              {% endif %}
+            </td>
+            <td>
+              {% if current_user.es_junta() or current_user.es_admin() %}
+                {% if not inc.verificado %}
+                <form method="POST" action="{{ url_for('incidentes.verificar', id=inc.id) }}" class="d-inline">
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                  <button class="btn btn-sm btn-outline-success" title="Verificar"><i class="bi bi-check-lg"></i></button>
+                </form>
+                {% endif %}
+                <form method="POST" action="{{ url_for('incidentes.eliminar', id=inc.id) }}" class="d-inline" data-confirm="¿Eliminar este incidente?" data-btn-text="Sí, eliminar" data-btn-class="btn-danger">
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                  <button class="btn btn-sm btn-outline-danger" title="Eliminar"><i class="bi bi-trash"></i></button>
+                </form>
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Mobile cards -->
+    <div class="inc-cards-mobile">
+      {% for inc in incidentes %}
+      <div class="inc-m-card">
+        <div class="mc-top">
+          <a href="{{ url_for('incidentes.detalle', id=inc.id) }}" class="mc-num">#{{ pagination.total - ((page-1) * pagination.per_page) - loop.index + 1 }} {% if inc.evidencias.count() > 0 %}📸{% endif %}</a>
+          <span class="mc-risk {{ inc.riesgo_nivel }}">{{ inc.riesgo_nivel }}</span>
+        </div>
+        <span class="mc-type" data-style-bg="{{ inc.tipo_incidente.color or '#6c757d' }}20" data-style-color="{{ inc.tipo_incidente.color or '#6c757d' }}">{{ inc.tipo }}</span>
+        <div class="mc-desc">{{ (inc.descripcion[:60] if inc.descripcion else 'Sin descripci&oacute;n')|safe }}</div>
+        <div class="mc-meta">
+          <span><i class="bi bi-geo-alt me-1"></i>{{ "%.4f, %.4f"|format(inc.latitud, inc.longitud) }}</span>
+          <span><i class="bi bi-clock me-1"></i>{{ inc.fecha_hora|bolivia if inc.fecha_hora else '' }}</span>
+          <span>{% if inc.resuelto %}<i class="bi bi-check-circle text-info me-1"></i>Resuelto{% elif inc.verificado %}<i class="bi bi-check-circle text-success me-1"></i>Verificado{% else %}<i class="bi bi-circle text-secondary me-1"></i>Pendiente{% endif %}</span>
+        </div>
+        {% if current_user.es_junta() or current_user.es_admin() %}
+        <div class="mc-actions">
+          {% if not inc.verificado %}
+          <form method="POST" action="{{ url_for('incidentes.verificar', id=inc.id) }}" class="d-inline">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button class="btn btn-sm btn-outline-success"><i class="bi bi-check-lg"></i> Verificar</button>
+          </form>
+          {% endif %}
+          <form method="POST" action="{{ url_for('incidentes.eliminar', id=inc.id) }}" class="d-inline" data-confirm="¿Eliminar este incidente?" data-btn-text="Sí, eliminar" data-btn-class="btn-danger">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i> Eliminar</button>
+          </form>
+          <a href="{{ url_for('incidentes.detalle', id=inc.id) }}" class="btn btn-sm btn-outline-info"><i class="bi bi-eye"></i> Ver</a>
+        </div>
+        {% else %}
+        <div class="mc-actions">
+          <a href="{{ url_for('incidentes.detalle', id=inc.id) }}" class="btn btn-sm btn-outline-info"><i class="bi bi-eye"></i> Ver detalle</a>
+        </div>
+        {% endif %}
+      </div>
+      {% endfor %}
+    </div>
+
+    {% if pagination.pages > 1 %}
+    <nav>
+      <ul class="pagination justify-content-center">
+        {% for p in range(1, pagination.pages + 1) %}
+        <li class="page-item {{ 'active' if p == page }}">
+          <a class="page-link" href="{{ url_for('incidentes.lista_incidentes', page=p, tipo=request.args.get('tipo'), riesgo=request.args.get('riesgo'), resuelto=request.args.get('resuelto')) }}">{{ p }}</a>
+        </li>
+        {% endfor %}
+      </ul>
+    </nav>
+    {% endif %}
+    {% else %}
+    <div class="text-center py-5 text-muted">
+      <i class="bi bi-inbox fs-1"></i>
+      <p class="mt-2">No hay incidentes registrados.</p>
+    </div>
+    {% endif %}
+  </div>
+</div>
+</div>
+{% endblock %}
+{% block extra_scripts %}
+<script>
+function aplicarFiltros() {
+    var tipo = document.getElementById('filtroTipo').value;
+    var riesgo = document.getElementById('filtroRiesgo').value;
+    var params = new URLSearchParams(window.location.search);
+    if (tipo) params.set('tipo', tipo); else params.delete('tipo');
+    if (riesgo) params.set('riesgo', riesgo); else params.delete('riesgo');
+    params.set('page', '1');
+    window.location.search = params.toString();
+}
+function limpiarFiltros() {
+    window.location.href = window.location.pathname;
+}
+(function() {
+    var params = new URLSearchParams(window.location.search);
+    if (params.get('tipo')) document.getElementById('filtroTipo').value = params.get('tipo');
+    if (params.get('riesgo')) document.getElementById('filtroRiesgo').value = params.get('riesgo');
+})();
+</script>
+{% endblock %}

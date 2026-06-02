@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block title %}Enviar Alerta - SEGURIDAD VECINAL{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header"><i class="bi bi-megaphone me-2"></i>Enviar Alerta a Todos los Usuarios</div>
+            <div class="card-body">
+                <form method="POST" action="{{ url_for('alertas.crear_alerta_masiva') }}">
+                    {{ form.hidden_tag() }}
+                    <div class="mb-3">
+                        {{ form.tipo_alerta_id.label(class="form-label") }}
+                        {{ form.tipo_alerta_id(class="form-select" + (" is-invalid" if form.tipo_alerta_id.errors else "")) }}
+                        {% for error in form.tipo_alerta_id.errors %}<div class="invalid-feedback">{{ error }}</div>{% endfor %}
+                    </div>
+                    <div class="mb-3">
+                        {{ form.mensaje.label(class="form-label") }}
+                        {{ form.mensaje(class="form-control" + (" is-invalid" if form.mensaje.errors else "")) }}
+                        {% for error in form.mensaje.errors %}<div class="invalid-feedback">{{ error }}</div>{% endfor %}
+                        <small class="text-muted">Este mensaje será enviado a todos los usuarios activos.</small>
+                    </div>
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-6">
+                            {{ form.zona_afectada.label(class="form-label") }}
+                            {{ form.zona_afectada(class="form-control" + (" is-invalid" if form.zona_afectada.errors else "")) }}
+                        </div>
+                        <div class="col-md-6">
+                            {{ form.nivel_riesgo.label(class="form-label") }}
+                            {{ form.nivel_riesgo(class="form-select" + (" is-invalid" if form.nivel_riesgo.errors else "")) }}
+                        </div>
+                    </div>
+                    <div class="d-flex justify-content-between">
+                        <a href="{{ url_for('alertas.listar_alertas') }}" class="btn btn-outline-secondary">Cancelar</a>
+                        {{ form.submit(class="btn btn-warning") }}
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

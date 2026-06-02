@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% block title %}Mi Historial - SEGURIDAD VECINAL{% endblock %}
+{% block content %}
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <span><i class="bi bi-clock-history me-2"></i>Mi Historial de Reportes</span>
+        <a href="{{ url_for('incidentes.reportar') }}" class="btn btn-sm btn-danger">
+            <i class="bi bi-plus"></i> Nuevo Reporte
+        </a>
+    </div>
+    <div class="card-body">
+        {% if incidentes %}
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Tipo</th>
+                        <th>Descripción</th>
+                        <th>Fecha</th>
+                        <th>Riesgo</th>
+                        <th>Estado</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for inc in incidentes %}
+                    <tr>
+                        <td>#{{ inc.id }}</td>
+                        <td><span class="badge bg-secondary">{{ inc.tipo }}</span></td>
+                        <td>{{ inc.descripcion[:60] if inc.descripcion else '—' }}</td>
+                        <td><small>{{ inc.fecha_hora|bolivia if inc.fecha_hora else '—' }}</small></td>
+                        <td><span class="badge nivel-{{ inc.riesgo_nivel }}">{{ inc.riesgo_nivel }}</span></td>
+                        <td>
+                            {% if inc.verificado %}
+                            <span class="badge bg-success">Verificado</span>
+                            {% else %}
+                            <span class="badge bg-secondary">Pendiente</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% if pagination.pages > 1 %}
+        <nav>
+            <ul class="pagination justify-content-center">
+                {% for p in range(1, pagination.pages + 1) %}
+                <li class="page-item {{ 'active' if p == page }}">
+                    <a class="page-link" href="{{ url_for('incidentes.historial', page=p) }}">{{ p }}</a>
+                </li>
+                {% endfor %}
+            </ul>
+        </nav>
+        {% endif %}
+        {% else %}
+        <div class="text-center py-5 text-muted">
+            <i class="bi bi-inbox fs-1"></i>
+            <p class="mt-2">No has reportado incidentes todavía.</p>
+            <a href="{{ url_for('incidentes.reportar') }}" class="btn btn-danger">Reportar ahora</a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

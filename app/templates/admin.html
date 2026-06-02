@@ -1,0 +1,153 @@
+{% extends "base.html" %}
+{% block title %}Panel de Administraci&oacute;n - SEGURIDAD VECINAL{% endblock %}
+{% block content %}
+<style>
+.user-cards-mobile{display:none} 
+@media(max-width:767px){
+  .user-table-desktop{display:none}
+  .user-cards-mobile{display:flex;flex-direction:column;gap:0.6rem}
+}
+.user-m-card{
+  background:#fff;border:1px solid rgba(0,0,0,0.04);border-radius:14px;
+  padding:0.8rem 0.9rem;box-shadow:0 1px 4px rgba(0,0,0,0.02);
+}
+.user-m-card .umc-top{display:flex;align-items:center;gap:0.6rem;margin-bottom:0.4rem}
+.user-m-card .umc-top .umc-avatar{width:36px;height:36px;border-radius:50%;object-fit:cover;flex-shrink:0}
+.user-m-card .umc-top .umc-name{font-weight:600;font-size:0.82rem;flex:1}
+.user-m-card .umc-top .umc-rol{font-size:0.55rem;padding:0.15rem 0.4rem;border-radius:4px}
+.user-m-card .umc-info{display:flex;flex-wrap:wrap;gap:0.2rem 0.6rem;font-size:0.65rem;color:rgba(0,0,0,0.4);margin-bottom:0.4rem}
+.user-m-card .umc-actions{display:flex;flex-wrap:wrap;gap:0.3rem;padding-top:0.4rem;border-top:1px solid rgba(0,0,0,0.03)}
+.user-m-card .umc-actions select{font-size:0.6rem;padding:0.15rem 0.4rem;border-radius:6px;border:1px solid rgba(0,0,0,0.1)}
+.user-m-card .umc-actions .btn-sm{font-size:0.6rem;padding:0.2rem 0.6rem;border-radius:6px}
+</style>
+
+<div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+    <h5 class="mb-0"><i class="bi bi-people me-2"></i>Gesti&oacute;n de Usuarios</h5>
+    <span class="badge bg-secondary" style="font-size:0.7rem;">{{ stats.total }} usuarios</span>
+</div>
+<div class="row g-3 mb-4">
+    <div class="col-4 col-md-4">
+        <div class="card text-center py-3">
+            <div class="number text-success fs-4 fw-bold">{{ stats.vecinos }}</div>
+            <small class="text-muted" style="font-size:0.7rem;">Vecinos</small>
+        </div>
+    </div>
+    <div class="col-4 col-md-4">
+        <div class="card text-center py-3">
+            <div class="number text-info fs-4 fw-bold">{{ stats.juntas }}</div>
+            <small class="text-muted" style="font-size:0.7rem;">Junta Vecinal</small>
+        </div>
+    </div>
+    <div class="col-4 col-md-4">
+        <div class="card text-center py-3">
+            <div class="number text-warning fs-4 fw-bold">{{ stats.admins }}</div>
+            <small class="text-muted" style="font-size:0.7rem;">Administradores</small>
+        </div>
+    </div>
+</div>
+<div class="card">
+    <div class="card-header"><i class="bi bi-person-badge me-2"></i>Lista de Usuarios</div>
+    <div class="card-body">
+        <!-- Desktop table -->
+        <div class="table-responsive user-table-desktop">
+            <table class="table table-hover align-middle">
+                <thead class="table-light">
+                    <tr>
+                        <th>ID</th>
+                        <th>Nombre</th>
+                        <th>Email</th>
+                        <th>Tel&eacute;fono</th>
+                        <th>Barrio</th>
+                        <th>Rol</th>
+                        <th>Registro</th>
+                        <th style="font-size:0.65rem;">Email</th>
+                        <th>Estado</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for usuario in usuarios %}
+                    <tr>
+                        <td>{{ usuario.id }}</td>
+                        <td>
+                            <div class="d-flex align-items-center gap-2">
+                                {% if usuario.foto_url %}
+                                <img src="{{ url_for('static', filename=usuario.foto_url) }}" alt="" style="width:28px;height:28px;border-radius:50%;object-fit:cover;">
+                                {% endif %}
+                                <strong>{{ usuario.nombre }}</strong>
+                            </div>
+                        </td>
+                        <td><small>{{ usuario.email }}</small></td>
+                        <td><small>{{ (usuario.telefono or '&mdash;')|safe }}</small></td>
+                        <td><small>{{ usuario.barrio_obj.nombre if usuario.barrio_obj else '&mdash;' }}</small></td>
+                        <td><span class="badge bg-{{ 'success' if usuario.rol == 'admin' else 'info' if usuario.rol == 'junta' else 'secondary' }}">{{ usuario.rol }}</span></td>
+                        <td><small>{{ usuario.fecha_registro|bolivia if usuario.fecha_registro else '—' }}</small></td>
+                        <td>{% if usuario.email_verified %}<span class="badge bg-success" title="Email verificado"><i class="bi bi-check-circle"></i></span>{% else %}<span class="badge bg-warning text-dark" title="Email no verificado"><i class="bi bi-exclamation-circle"></i></span>{% endif %}</td>
+                        <td>{% if usuario.activo %}<span class="badge bg-success">Activo</span>{% else %}<span class="badge bg-danger">Inactivo</span>{% endif %}</td>
+                        <td>
+                            <div class="d-flex gap-1">
+                                <form method="POST" action="{{ url_for('usuarios.cambiar_rol', id=usuario.id) }}" class="d-inline" id="form-rol-{{ usuario.id }}">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                    <select name="rol" class="form-select form-select-sm" style="width:auto;font-size:0.7rem;" onchange="document.getElementById('form-rol-{{ usuario.id }}').submit()">
+                                        <option value="vecino" {{ 'selected' if usuario.rol == 'vecino' }}>Vecino</option>
+                                        <option value="junta" {{ 'selected' if usuario.rol == 'junta' }}>Junta</option>
+                                        <option value="admin" {{ 'selected' if usuario.rol == 'admin' }}>Admin</option>
+                                    </select>
+                                </form>
+                                <form method="POST" action="{{ url_for('usuarios.toggle_activo', id=usuario.id) }}" class="d-inline">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                    <button class="btn btn-sm btn-outline-{{ 'danger' if usuario.activo else 'success' }}" title="{{ 'Desactivar' if usuario.activo else 'Activar' }}" style="padding:0.15rem 0.4rem;font-size:0.65rem;">
+                                        <i class="bi bi-{{ 'pause-circle' if usuario.activo else 'play-circle' }}"></i>
+                                    </button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Mobile cards -->
+        <div class="user-cards-mobile">
+            {% for usuario in usuarios %}
+            <div class="user-m-card">
+                <div class="umc-top">
+                    {% if usuario.foto_url %}
+                    <img src="{{ url_for('static', filename=usuario.foto_url) }}" alt="" class="umc-avatar">
+                    {% else %}
+                    <div class="umc-avatar" style="background:linear-gradient(135deg,var(--sidebar-accent),var(--accent-light));display:flex;align-items:center;justify-content:center;font-weight:700;color:#000;font-size:0.8rem;">{{ usuario.nombre[:1]|upper }}</div>
+                    {% endif %}
+                    <span class="umc-name">{{ usuario.nombre }}</span>
+                    <span class="umc-rol badge bg-{{ 'success' if usuario.rol == 'admin' else 'info' if usuario.rol == 'junta' else 'secondary' }}">{{ usuario.rol }}</span>
+                </div>
+                <div class="umc-info">
+                    <span><i class="bi bi-envelope me-1"></i>{{ usuario.email }}</span>
+                    <span><i class="bi bi-telephone me-1"></i>{{ usuario.telefono or '&mdash;' }}</span>
+                    <span><i class="bi bi-geo me-1"></i>{{ usuario.barrio_obj.nombre if usuario.barrio_obj else '&mdash;' }}</span>
+                    <span><i class="bi bi-calendar me-1"></i>{{ usuario.fecha_registro|bolivia if usuario.fecha_registro else '' }}</span>
+                    <span>{% if usuario.email_verified %}<span class="badge bg-success" style="font-size:0.55rem;" title="Verificado"><i class="bi bi-check-circle"></i></span>{% else %}<span class="badge bg-warning text-dark" style="font-size:0.55rem;" title="No verificado"><i class="bi bi-exclamation-circle"></i></span>{% endif %}</span>
+                    <span>{% if usuario.activo %}<span class="badge bg-success" style="font-size:0.55rem;">Activo</span>{% else %}<span class="badge bg-danger" style="font-size:0.55rem;">Inactivo</span>{% endif %}</span>
+                </div>
+                <div class="umc-actions">
+                    <form method="POST" action="{{ url_for('usuarios.cambiar_rol', id=usuario.id) }}" class="d-inline" id="mform-rol-{{ usuario.id }}">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <select name="rol" onchange="document.getElementById('mform-rol-{{ usuario.id }}').submit()">
+                            <option value="vecino" {{ 'selected' if usuario.rol == 'vecino' }}>Vecino</option>
+                            <option value="junta" {{ 'selected' if usuario.rol == 'junta' }}>Junta</option>
+                            <option value="admin" {{ 'selected' if usuario.rol == 'admin' }}>Admin</option>
+                        </select>
+                    </form>
+                    <form method="POST" action="{{ url_for('usuarios.toggle_activo', id=usuario.id) }}" class="d-inline">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <button class="btn btn-sm btn-outline-{{ 'danger' if usuario.activo else 'success' }}">
+                            <i class="bi bi-{{ 'pause-circle' if usuario.activo else 'play-circle' }}"></i> {{ 'Desactivar' if usuario.activo else 'Activar' }}
+                        </button>
+                    </form>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %}

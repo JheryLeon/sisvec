@@ -1,0 +1,568 @@
+{% extends "base.html" %}
+{% block title %}Mi Comunidad - SEGURIDAD VECINAL{% endblock %}
+{% block content %}
+<style>
+    .dash-vec {
+        margin: -1rem;
+        padding: 1.25rem;
+        min-height: calc(100vh - 56px);
+        background: var(--bg-dash);
+        position: relative;
+        overflow: hidden;
+        transition: background 0.3s;
+    }
+    @media (min-width: 768px) {
+        .dash-vec {
+            margin: -1.5rem;
+            padding: 1.5rem;
+        }
+    }
+    .dash-vec .ambient {
+        position: absolute;
+        border-radius: 50%;
+        filter: blur(60px);
+        pointer-events: none;
+        z-index: 0;
+    }
+    .dash-vec .ambient.a1 { width: 400px; height: 400px; background: rgba(15,118,110,0.05); top: -100px; right: -100px; }
+    .dash-vec .ambient.a2 { width: 300px; height: 300px; background: rgba(15,118,110,0.04); bottom: -80px; left: -80px; }
+    html.dark .dash-vec .ambient.a1 { background: rgba(15,118,110,0.06); }
+    .dash-vec > *:not(.ambient) { position: relative; z-index: 1; }
+
+    .v-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 0.75rem;
+        margin-bottom: 1.25rem;
+    }
+    .v-header .v-user {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+    }
+    .v-header .v-user .v-avatar {
+        width: 44px;
+        height: 44px;
+        border-radius: 14px;
+        background: linear-gradient(135deg, var(--sidebar-accent), var(--accent-light));
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.2rem;
+        font-weight: 800;
+        color: #000;
+        box-shadow: 0 0 20px var(--accent-glow);
+    }
+    html.dark .v-header .v-user .v-avatar {
+        background: linear-gradient(135deg, var(--sidebar-accent), var(--accent-light));
+    }
+    .v-header .v-user h3 {
+        font-size: 1.15rem;
+        font-weight: 700;
+        color: var(--text-primary);
+        margin: 0;
+        line-height: 1.2;
+    }
+    .v-header .v-user h3 small {
+        display: block;
+        font-size: 0.65rem;
+        font-weight: 400;
+        color: var(--text-muted);
+    }
+    .v-header .v-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+        padding: 0.3rem 0.9rem;
+        border-radius: 50px;
+        font-size: 0.7rem;
+        font-weight: 600;
+    }
+    .v-header .v-badge.alto { background: rgba(220,53,69,0.12); color: #ff6b6b; border: 1px solid rgba(220,53,69,0.2); }
+    .v-header .v-badge.medio { background: rgba(255,193,7,0.12); color: #ffe066; border: 1px solid rgba(255,193,7,0.2); }
+    .v-header .v-badge.bajo { background: rgba(0,230,118,0.12); color: #00e676; border: 1px solid rgba(0,230,118,0.2); }
+    .v-header .v-badge.desconocido { background: rgba(255,255,255,0.05); color: rgba(255,255,255,0.35); border: 1px solid rgba(255,255,255,0.08); }
+
+    .safety-zone {
+        background: var(--bg-tile);
+        border: 1px solid var(--border-tile);
+        border-radius: 20px;
+        padding: 1.25rem 1.5rem;
+        margin-bottom: 1.25rem;
+        display: flex;
+        align-items: center;
+        gap: 1.25rem;
+        flex-wrap: wrap;
+    }
+    .safety-zone .ring-wrap {
+        position: relative;
+        width: 90px;
+        height: 90px;
+        flex-shrink: 0;
+    }
+    .safety-zone .ring-wrap canvas { width: 90px; height: 90px; }
+    .safety-zone .ring-wrap .ring-center {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+    }
+    .safety-zone .ring-wrap .ring-center .big {
+        font-size: 1.5rem;
+        font-weight: 800;
+        color: var(--text-primary);
+        font-family: 'Courier New', monospace;
+        line-height: 1;
+    }
+    .safety-zone .ring-wrap .ring-center .lbl {
+        font-size: 0.5rem;
+        color: var(--text-muted);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    .safety-zone .s-text { flex: 1; min-width: 180px; }
+    .safety-zone .s-text .s-title {
+        font-size: 0.85rem;
+        font-weight: 600;
+        color: var(--text-primary);
+        margin-bottom: 0.15rem;
+    }
+    .safety-zone .s-text .s-desc {
+        font-size: 0.72rem;
+        color: var(--text-muted);
+        line-height: 1.4;
+    }
+    .safety-zone .s-text .s-stats {
+        display: flex;
+        gap: 1rem;
+        margin-top: 0.4rem;
+        flex-wrap: wrap;
+    }
+    .safety-zone .s-text .s-stats span {
+        font-size: 0.62rem;
+        color: var(--text-muted);
+    }
+    .safety-zone .s-text .s-stats span strong {
+        color: var(--text-primary);
+        font-weight: 600;
+    }
+
+    .v-stats {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 0.75rem;
+        margin-bottom: 1.25rem;
+    }
+    .v-stat {
+        background: var(--bg-tile);
+        border: 1px solid var(--border-tile);
+        border-radius: 14px;
+        padding: 0.9rem;
+        text-align: center;
+        transition: all 0.3s;
+    }
+    .v-stat:hover { transform: translateY(-2px); border-color: var(--sidebar-accent); opacity: 0.85; }
+    .v-stat .v-icon { font-size: 1.1rem; margin-bottom: 0.2rem; }
+    .v-stat .v-num {
+        font-size: 1.3rem;
+        font-weight: 700;
+        color: var(--text-primary);
+        font-family: 'Courier New', monospace;
+    }
+    .v-stat .v-lbl { font-size: 0.6rem; color: var(--text-muted); margin-top: 0.05rem; }
+
+    .v-pair {
+        display: grid;
+        grid-template-columns: 1.3fr 1fr;
+        gap: 0.9rem;
+        margin-bottom: 1.25rem;
+    }
+
+    .v-card {
+        background: var(--bg-tile);
+        border: 1px solid var(--border-tile);
+        border-radius: 16px;
+        padding: 1.1rem;
+    }
+    .v-card .v-c-head {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 0.65rem;
+        font-size: 0.75rem;
+        font-weight: 600;
+        color: var(--text-muted);
+    }
+    .v-card .v-c-head a {
+        font-size: 0.62rem;
+        font-weight: 400;
+        color: var(--sidebar-accent);
+        text-decoration: none;
+        opacity: 0.7;
+    }
+    .v-card .v-c-head a:hover { opacity: 1; }
+
+    .alert-compact {
+        display: flex;
+        flex-direction: column;
+        gap: 0.4rem;
+    }
+    .alert-item {
+        display: flex;
+        gap: 0.5rem;
+        padding: 0.6rem;
+        border-radius: 10px;
+        background: var(--bg-tile);
+        border: 1px solid var(--border-tile);
+        transition: background 0.2s;
+    }
+    .alert-item:hover { background: transparent; opacity: 0.85; }
+    .alert-item.top {
+        border-left: 3px solid var(--sidebar-accent);
+        background: var(--sidebar-active-bg);
+    }
+    html.dark .alert-item.top {
+        border-left: 3px solid var(--sidebar-accent);
+        background: var(--accent-glow);
+    }
+    .alert-item .a-icon { font-size: 1rem; flex-shrink: 0; margin-top: 0.05rem; }
+    .alert-item .a-body { flex: 1; min-width: 0; }
+    .alert-item .a-body .a-msg {
+        font-size: 0.72rem;
+        color: var(--text-primary);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    .alert-item .a-body .a-meta {
+        font-size: 0.58rem;
+        color: var(--text-muted);
+        margin-top: 0.1rem;
+    }
+    .alert-item .a-tag {
+        font-size: 0.55rem;
+        font-weight: 700;
+        padding: 0.1rem 0.35rem;
+        border-radius: 4px;
+        height: fit-content;
+        text-transform: uppercase;
+        letter-spacing: 0.3px;
+    }
+    .alert-item .a-tag.new { background: #00e676; color: #000; }
+
+    .empty-alert {
+        text-align: center;
+        padding: 1rem;
+        color: var(--text-muted);
+    }
+    .empty-alert i { font-size: 1.3rem; }
+    .empty-alert p { font-size: 0.65rem; margin-top: 0.2rem; }
+
+    .spark-box { height: 80px; position: relative; }
+
+    .btn-float-report {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.75rem 2rem;
+        border: none;
+        border-radius: 50px;
+        background: linear-gradient(135deg, var(--accent-light), var(--sidebar-accent));
+        background-size: 200% 200%;
+        animation: grad-float 3s ease infinite;
+        color: #000;
+        font-weight: 700;
+        font-size: 0.85rem;
+        text-decoration: none;
+        transition: all 0.3s;
+    }
+    .btn-float-report:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(15,118,110,0.25);
+        color: #000;
+    }
+    @keyframes grad-float { 0%,100% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } }
+
+    .inc-terse .it-row {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.45rem 0;
+        border-bottom: 1px solid var(--border-tile);
+    }
+    .inc-terse .it-row:last-child { border-bottom: none; }
+    .inc-terse .it-row .dot {
+        width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0;
+    }
+    .inc-terse .it-row .dot.alto { background: #dc3545; }
+    .inc-terse .it-row .dot.medio { background: #ffc107; }
+    .inc-terse .it-row .dot.bajo { background: #00e676; }
+    .inc-terse .it-row .it-txt { flex: 1; min-width: 0; }
+    .inc-terse .it-row .it-txt .it-type { font-size: 0.7rem; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .inc-terse .it-row .it-txt .it-when { font-size: 0.58rem; color: var(--text-muted); }
+    .inc-terse .it-row .it-arr { color: var(--text-muted); font-size: 0.6rem; }
+
+    .fade-slide {
+        opacity: 0;
+        transform: translateY(12px);
+        animation: slide-up 0.45s ease forwards;
+    }
+    .fade-slide:nth-child(1) { animation-delay: 0.03s; }
+    .fade-slide:nth-child(2) { animation-delay: 0.1s; }
+    .fade-slide:nth-child(3) { animation-delay: 0.18s; }
+    .fade-slide:nth-child(4) { animation-delay: 0.26s; }
+    @keyframes slide-up { to { opacity: 1; transform: translateY(0); } }
+
+    @media (max-width: 768px) {
+        .v-stats { grid-template-columns: repeat(3, 1fr); gap: 0.5rem; }
+        .v-pair { grid-template-columns: 1fr; }
+        .safety-zone { flex-direction: column; align-items: flex-start; text-align: center; }
+        .safety-zone .ring-wrap { margin: 0 auto; }
+        .safety-zone .s-text .s-stats { justify-content: center; }
+        .v-stat .v-num { font-size: 1.1rem; }
+    }
+    @media (max-width: 375px) {
+        .v-stats { gap: 0.35rem; }
+        .v-stat { padding: 0.65rem 0.4rem; }
+        .v-stat .v-num { font-size: 1rem; }
+        .v-stat .v-lbl { font-size: 0.55rem; }
+        .safety-zone .ring-wrap { width: 70px; height: 70px; }
+        .safety-zone .ring-wrap canvas { width: 70px; height: 70px; }
+        .v-header h3 { font-size: 1rem; }
+        .v-header .v-badge { font-size: 0.6rem; padding: 0.2rem 0.6rem; }
+    }
+</style>
+
+<div class="dash-vec">
+    <div class="ambient a1"></div>
+    <div class="ambient a2"></div>
+
+    <div class="v-header">
+        <div class="v-user">
+            <div class="v-avatar" style="overflow:hidden;">
+                {% if current_user.foto_url %}
+                <img src="{{ url_for('static', filename=current_user.foto_url) }}" alt="" style="width:100%;height:100%;object-fit:cover;">
+                {% else %}
+                {{ current_user.nombre[:1]|upper }}
+                {% endif %}
+            </div>
+            <div>
+                <h3>
+                    Hola, {{ current_user.nombre.split()[0] }} 
+                    <small><i class="bi bi-clock me-1"></i><span id="liveClock"></span> &middot; {{ current_user.rol|capitalize }}</small>
+                </h3>
+            </div>
+        </div>
+        <div class="v-badge {{ riesgo_actual.nivel_global }}">
+            <i class="bi bi-shield-{{ 'check' if riesgo_actual.nivel_global == 'bajo' else 'exclamation' if riesgo_actual.nivel_global == 'alto' else 'question' }}"></i>
+            {{ riesgo_actual.nivel_global|upper }}
+        </div>
+    </div>
+
+    <div class="safety-zone fade-slide">
+        <div class="ring-wrap">
+            <canvas id="safetyCanvas" width="90" height="90"></canvas>
+            <div class="ring-center">
+                <span class="big">{{ safety_score }}</span>
+                <span class="lbl">Seguridad</span>
+            </div>
+        </div>
+        <div class="s-text">
+            <div class="s-title">Estado de tu comunidad</div>
+            <div class="s-desc">
+                {% if safety_score >= 75 %}
+                Tu vecindario se mantiene en un nivel seguro. Sigamos colaborando.
+                {% elif safety_score >= 50 %}
+                Hay zonas con riesgo moderado. Revisa las alertas y el mapa.
+                {% else %}
+                El nivel de riesgo es elevado. Mantente atento a las notificaciones.
+                {% endif %}
+            </div>
+            <div class="s-stats">
+                <span><i class="bi bi-exclamation-triangle me-1"></i><strong>{{ total_incidentes }}</strong> incidentes</span>
+                <span><i class="bi bi-geo-alt me-1"></i><strong>{{ riesgo_actual.zonas_altas }}</strong> zonas críticas</span>
+                <span><i class="bi bi-people me-1"></i><strong>{{ reportantes_unicos }}</strong> vecinos activos</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="v-stats">
+        <div class="v-stat fade-slide">
+            <div class="v-icon" style="color:var(--sidebar-accent);"><i class="bi bi-shield-check"></i></div>
+            <div class="v-num" data-n="{{ total_incidentes }}">0</div>
+            <div class="v-lbl">Reportes (30d)</div>
+        </div>
+        <div class="v-stat fade-slide">
+            <div class="v-icon" style="color:#ffe066;"><i class="bi bi-bell"></i></div>
+            <div class="v-num">{{ alertas_no_leidas }}</div>
+            <div class="v-lbl">Alertas pendientes</div>
+        </div>
+        <div class="v-stat fade-slide">
+            <div class="v-icon" style="color:#4fc3f7;"><i class="bi bi-people"></i></div>
+            <div class="v-num">{{ reportantes_unicos }}</div>
+            <div class="v-lbl">Vecinos reportando</div>
+        </div>
+    </div>
+
+    <div class="v-pair">
+        <div class="v-card" style="animation: slide-up 0.45s ease 0.15s forwards; opacity:0;">
+            <div class="v-c-head">
+                <span><i class="bi bi-megaphone me-1" style="color:#ffe066;"></i>Alertas para ti</span>
+                <a href="{{ url_for('alertas.listar_alertas') }}">Ver todas &rarr;</a>
+            </div>
+            {% if mis_alertas %}
+            <div class="alert-compact">
+                {% for al in mis_alertas %}
+                <div class="alert-item {{ 'top' if not al.leida }}">
+                    <div class="a-icon" data-style-color="{{ '#ff6b6b' if al.nivel_riesgo == 'alto' else '#ffe066' if al.nivel_riesgo == 'medio' else 'var(--sidebar-accent)' }}">
+                        <i class="bi bi-{{ 'exclamation-circle' if al.nivel_riesgo == 'alto' else 'info-circle' }}"></i>
+                    </div>
+                    <div class="a-body">
+                        <div class="a-msg">{{ al.mensaje[:45] }}</div>
+                        <div class="a-meta">{{ al.fecha_envio|bolivia if al.fecha_envio else '' }}{{ ' · ' + al.zona_afectada if al.zona_afectada else '' }}</div>
+                    </div>
+                    {% if not al.leida %}<span class="a-tag new">Nueva</span>{% endif %}
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="empty-alert"><i class="bi bi-check2-circle" style="color:var(--sidebar-accent);"></i><p>Todo tranquilo — sin alertas pendientes</p></div>
+            {% endif %}
+        </div>
+
+        <div class="v-card" style="animation: slide-up 0.45s ease 0.23s forwards; opacity:0;">
+            <div class="v-c-head">
+                <span><i class="bi bi-graph-up me-1" style="color:#4fc3f7;"></i>Tendencia</span>
+                <span style="font-size:0.58rem;color:rgba(255,255,255,0.2);">7 días</span>
+            </div>
+            <div class="spark-box">
+                <canvas id="miniSpark"></canvas>
+            </div>
+            <div class="mt-2 text-center">
+                <a href="{{ url_for('mapa.mapa') }}" class="btn-float-report" style="padding:0.4rem 1.2rem;font-size:0.72rem;">
+                    <i class="bi bi-map"></i> Ver Mapa
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="v-card fade-slide">
+        <div class="v-c-head">
+            <span><i class="bi bi-lightning me-1" style="color:#ffe066;"></i>Últimos Incidentes</span>
+            <a href="{{ url_for('incidentes.lista_incidentes') }}">Todos &rarr;</a>
+        </div>
+        {% if ultimos_incidentes %}
+        <div class="inc-terse">
+            {% for inc in ultimos_incidentes[:5] %}
+            <div class="it-row">
+                <span class="dot {{ inc.riesgo_nivel }}"></span>
+                <div class="it-txt">
+                    <div class="it-type">{{ inc.tipo }}{{ ' · ' + inc.descripcion[:28] if inc.descripcion else '' }}</div>
+                    <div class="it-when">{{ inc.fecha_hora|bolivia if inc.fecha_hora else '' }}</div>
+                </div>
+                <span class="it-arr"><i class="bi bi-chevron-right"></i></span>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="empty-alert"><i class="bi bi-inbox"></i><p>No hay incidentes recientes</p></div>
+        {% endif %}
+    </div>
+
+    <div class="text-center mt-3">
+        <a href="{{ url_for('incidentes.reportar') }}" class="btn-float-report">
+            <i class="bi bi-plus-lg"></i> Reportar Incidente
+        </a>
+    </div>
+</div>
+<span id="vecinoData"
+  data-sc='{{ safety_score }}'
+  data-lb='{{ tendencia_datos|map(attribute="fecha")|list|tojson }}'
+  data-dv='{{ tendencia_datos|map(attribute="total")|list|tojson }}'
+  hidden></span>
+{% endblock %}
+{% block extra_scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    var vd = document.getElementById('vecinoData');
+    var sc = parseInt(vd.dataset.sc) || 0;
+    var lb = JSON.parse(vd.dataset.lb);
+    var dv = JSON.parse(vd.dataset.dv);
+    var cv = document.getElementById('safetyCanvas');
+    if (cv) {
+        var ctx = cv.getContext('2d');
+        var col = sc >= 75 ? 'var(--sidebar-accent)' : sc >= 50 ? '#ffc107' : '#dc3545';
+
+        ctx.clearRect(0, 0, 90, 90);
+        ctx.beginPath();
+        ctx.arc(45, 45, 34, 0, Math.PI * 2);
+        ctx.strokeStyle = 'rgba(255,255,255,0.05)';
+        ctx.lineWidth = 5;
+        ctx.stroke();
+
+        var a1 = -Math.PI / 2;
+        var a2 = a1 + (sc / 100) * Math.PI * 2;
+        ctx.beginPath();
+        ctx.arc(45, 45, 34, a1, a2);
+        ctx.strokeStyle = col;
+        ctx.lineWidth = 5;
+        ctx.lineCap = 'round';
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.arc(45, 45, 34, a2 - 0.05, a2);
+        ctx.strokeStyle = col;
+        ctx.lineWidth = 7;
+        ctx.lineCap = 'round';
+        ctx.stroke();
+    }
+
+    document.querySelectorAll('.v-stat .v-num[data-n]').forEach(function(el) {
+        var t = parseInt(el.dataset.n) || 0;
+        if (t > 0) {
+            el.textContent = '0';
+            var s = Math.max(1, Math.floor(t / 20));
+            var c = 0;
+            var iv = setInterval(function() {
+                c += s;
+                if (c >= t) { c = t; clearInterval(iv); }
+                el.textContent = c;
+            }, 20);
+        }
+    });
+
+    var lb7 = lb.slice(-7);
+    var dv7 = dv.slice(-7);
+
+    new Chart(document.getElementById('miniSpark'), {
+        type: 'line',
+        data: {
+            labels: lb7,
+            datasets: [{
+                data: dv7,
+                borderColor: '#4fc3f7',
+                backgroundColor: 'rgba(79,195,247,0.08)',
+                borderWidth: 2,
+                fill: true,
+                tension: 0.4,
+                pointRadius: 0,
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            animation: { duration: 700 },
+            plugins: { legend: { display: false }, tooltip: { enabled: false } },
+            scales: {
+                y: { beginAtZero: true, display: false, grid: { display: false } },
+                x: { display: false, grid: { display: false } }
+            }
+        }
+    });
+});
+</script>
+{% endblock %}

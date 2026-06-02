@@ -1,0 +1,235 @@
+{% extends "base.html" %}
+{% block title %}Mi Perfil - SISTEMA VECINAL{% endblock %}
+{% block content %}
+<style>
+.perf-wrap{
+  margin:-1rem;padding:1.25rem;min-height:calc(100vh - 56px);
+  background:var(--bg-dash);position:relative;overflow:hidden;color:var(--text-primary)
+}
+@media(min-width:768px){.perf-wrap{margin:-1.5rem;padding:1.5rem}}
+.perf-wrap .orb{position:absolute;border-radius:50%;filter:blur(80px);pointer-events:none;opacity:0.2}
+html.dark .perf-wrap .orb{opacity:0.3}
+.perf-wrap .orb.o1{width:400px;height:400px;background:rgba(15,118,110,0.08);top:-120px;right:-80px;animation:pfFloat 10s ease-in-out infinite}
+.perf-wrap .orb.o2{width:350px;height:350px;background:rgba(15,118,110,0.05);bottom:-100px;left:-60px;animation:pfFloat 12s ease-in-out infinite reverse}
+@keyframes pfFloat{0%,100%{transform:translate(0,0)scale(1)}50%{transform:translate(25px,-20px)scale(1.05)}}
+
+.perf-header{display:flex;align-items:center;gap:1rem;margin-bottom:1.5rem;flex-wrap:wrap}
+.perf-header .pf-avatar{
+  width:64px;height:64px;border-radius:50%;overflow:hidden;flex-shrink:0;
+  background:linear-gradient(135deg,var(--sidebar-accent),var(--accent-light));display:flex;align-items:center;justify-content:center;
+  font-size:1.5rem;font-weight:800;color:#000;box-shadow:0 0 30px var(--accent-glow)
+}
+html.dark .perf-header .pf-avatar{background:linear-gradient(135deg,var(--sidebar-accent),var(--accent-light))}
+.perf-header .pf-avatar img{width:100%;height:100%;object-fit:cover}
+.perf-header h4{font-weight:700;margin:0;font-size:1.2rem;color:var(--text-primary)}
+.perf-header h4 small{display:block;font-size:0.7rem;font-weight:400;color:var(--text-muted)}
+
+.perf-grid{display:grid;grid-template-columns:1.2fr 1fr;gap:1rem;margin-bottom:1.25rem}
+@media(max-width:768px){.perf-grid{grid-template-columns:1fr}}
+@media(max-width:576px){
+  .floating-input .fl-control{font-size:1rem;padding:1.2rem 0.75rem 0.5rem}
+  .btn-save{min-height:48px;font-size:0.95rem}
+  .file-upload{min-height:56px;padding:0.8rem 0.8rem}
+  .perf-card{padding:1rem}
+  .stats-mini{grid-template-columns:repeat(3,1fr);gap:0.3rem}
+  .stats-mini .sm-item{padding:0.4rem 0.2rem}
+  .stats-mini .sm-item .sm-num{font-size:0.95rem}
+  .perf-header .pf-avatar{width:54px;height:54px;font-size:1.2rem}
+  .perf-header h4{font-size:1rem}
+  .perf-header h4 small{font-size:0.6rem}
+  .act-item{padding:0.4rem 0;font-size:0.72rem}
+}
+
+.perf-card{
+  background:var(--bg-tile);border:1px solid var(--border-tile);
+  border-radius:16px;padding:1.25rem;position:relative;overflow:hidden
+}
+.perf-card .pc-title{font-size:0.72rem;font-weight:600;color:var(--text-muted);margin-bottom:1rem;letter-spacing:0.3px}
+.perf-card .pc-title i{margin-right:0.4rem}
+
+.floating-input{position:relative;margin-bottom:0.9rem}
+.floating-input .fl-control{
+  width:100%;padding:1.1rem 0.75rem 0.45rem;background:transparent;border:none;
+  border-bottom:1px solid var(--border-color);outline:none;color:var(--text-primary);font-size:0.85rem;transition:border-color 0.3s;border-radius:0
+}
+.floating-input .fl-control:focus{border-bottom-color:var(--text-muted)}
+.floating-input .fl-control.is-invalid{border-bottom-color:#dc3545}
+.floating-input .fl-label{
+  position:absolute;left:0.75rem;top:1.05rem;color:var(--text-muted);transition:all 0.25s;
+  pointer-events:none;font-size:0.8rem;margin:0;opacity:0.5
+}
+.floating-input .fl-control:focus~.fl-label,
+.floating-input .fl-control:not(:placeholder-shown)~.fl-label{top:0;font-size:0.62rem;color:var(--sidebar-accent);opacity:1}
+.floating-input .fl-control.is-invalid~.fl-label{color:#dc3545}
+.floating-input .input-line{position:absolute;bottom:0;left:50%;width:0;height:2px;background:var(--sidebar-accent);transition:all 0.3s}
+.floating-input .fl-control:focus~.input-line{left:0;width:100%}
+.floating-input .fl-control.is-invalid~.input-line{background:#dc3545}
+
+.floating-input select.fl-control{
+  appearance:none;-webkit-appearance:none;cursor:pointer;
+  padding-right:1.5rem
+}
+.floating-input .sel-arrow{position:absolute;right:0.75rem;top:50%;transform:translateY(-50%);color:var(--text-muted);pointer-events:none;font-size:0.6rem;opacity:0.4}
+.floating-input select.fl-control option{background:var(--bg-card);color:var(--text-primary)}
+
+.file-upload{
+  position:relative;display:flex;align-items:center;gap:0.75rem;
+  padding:0.6rem 0.8rem;border:1px dashed var(--border-color);border-radius:10px;
+  cursor:pointer;transition:all 0.3s;margin-top:0.5rem
+}
+.file-upload:hover{border-color:var(--sidebar-accent);background:var(--sidebar-active-bg)}
+.file-upload input[type="file"]{position:absolute;inset:0;opacity:0;cursor:pointer}
+.file-upload .fu-icon{font-size:1.2rem;color:var(--text-muted)}
+.file-upload .fu-text{font-size:0.72rem;color:var(--text-muted)}
+
+.btn-save{
+  padding:0.7rem 2rem;border-radius:50px;font-weight:600;font-size:0.85rem;
+  border:none;background:linear-gradient(135deg,var(--sidebar-accent),var(--accent-light));color:#000;
+  transition:all 0.3s;width:100%
+}
+html.dark .btn-save{background:linear-gradient(135deg,var(--sidebar-accent),var(--accent-light))}
+.btn-save:hover{transform:translateY(-2px);box-shadow:0 8px 25px rgba(15,118,110,0.2)}
+
+.act-item{
+  display:flex;align-items:center;gap:0.5rem;padding:0.5rem 0;
+  border-bottom:1px solid var(--border-tile);font-size:0.75rem
+}
+.act-item:last-child{border-bottom:none}
+.act-item .act-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
+.act-item .act-body{flex:1;min-width:0}
+.act-item .act-body .act-txt{color:var(--text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.act-item .act-body .act-meta{font-size:0.6rem;color:var(--text-muted)}
+.act-item .act-badge{font-size:0.55rem;padding:0.1rem 0.4rem;border-radius:4px;flex-shrink:0}
+.empty-state{text-align:center;padding:1rem;color:var(--text-muted);font-size:0.75rem}
+
+.stats-mini{display:grid;grid-template-columns:repeat(3,1fr);gap:0.5rem;margin-top:0.5rem}
+.stats-mini .sm-item{text-align:center;padding:0.6rem 0.3rem;background:var(--bg-tile);border-radius:10px}
+.stats-mini .sm-item .sm-num{font-size:1.1rem;font-weight:700;font-family:'Courier New',monospace;color:var(--sidebar-accent)}
+html.dark .stats-mini .sm-item .sm-num{color:var(--sidebar-accent)}
+.stats-mini .sm-item .sm-lbl{font-size:0.58rem;color:var(--text-muted);margin-top:0.05rem}
+
+.fade-slide{opacity:0;transform:translateY(12px);animation:slideUp 0.4s ease forwards}
+@keyframes slideUp{to{opacity:1;transform:translateY(0)}}
+</style>
+
+<div class="perf-wrap">
+  <div class="orb o1"></div>
+  <div class="orb o2"></div>
+
+  <div class="perf-header fade-slide">
+    <div class="pf-avatar">
+      {% if current_user.foto_url %}
+      <img src="{{ url_for('static', filename=current_user.foto_url) }}" alt="">
+      {% else %}
+      {{ current_user.nombre[:1]|upper }}
+      {% endif %}
+    </div>
+    <div>
+      <h4>{{ current_user.nombre }} <small>@{{ current_user.email }} · {{ current_user.rol|capitalize }}</small></h4>
+    </div>
+  </div>
+
+  <div class="perf-grid">
+    <div class="perf-card fade-slide">
+      <div class="pc-title"><i class="bi bi-pencil"></i>Editar Perfil</div>
+      <form method="POST" enctype="multipart/form-data">
+        {{ form.hidden_tag() }}
+        <div class="floating-input">
+          {{ form.nombre(class="fl-control" + (" is-invalid" if form.nombre.errors else ""), placeholder=" ") }}
+          {{ form.nombre.label(class="fl-label") }}
+          <div class="input-line"></div>
+          {% for e in form.nombre.errors %}<div class="invalid-feedback" style="display:block;">{{ e }}</div>{% endfor %}
+        </div>
+        <div class="floating-input">
+          {{ form.email(class="fl-control" + (" is-invalid" if form.email.errors else ""), placeholder=" ") }}
+          {{ form.email.label(class="fl-label") }}
+          <div class="input-line"></div>
+          {% for e in form.email.errors %}<div class="invalid-feedback" style="display:block;">{{ e }}</div>{% endfor %}
+        </div>
+        <div class="floating-input">
+          {{ form.telefono(class="fl-control" + (" is-invalid" if form.telefono.errors else ""), placeholder=" ") }}
+          {{ form.telefono.label(class="fl-label") }}
+          <div class="input-line"></div>
+          {% for e in form.telefono.errors %}<div class="invalid-feedback" style="display:block;">{{ e }}</div>{% endfor %}
+        </div>
+        <div class="floating-input">
+          {{ form.barrio_id(class="fl-control" + (" is-invalid" if form.barrio_id.errors else "")) }}
+          <label class="fl-label" style="top:0;font-size:0.62rem;color:var(--sidebar-accent);">Barrio</label>
+          <span class="sel-arrow"><i class="bi bi-chevron-down"></i></span>
+          {% for e in form.barrio_id.errors %}<div class="invalid-feedback" style="display:block;">{{ e }}</div>{% endfor %}
+        </div>
+        <div class="file-upload">
+          <span class="fu-icon"><i class="bi bi-camera"></i></span>
+          <span class="fu-text" id="fuLabel">Cambiar foto de perfil</span>
+          {{ form.foto(class="", id="fotoInput", accept="image/*") }}
+        </div>
+        <hr style="border-color:rgba(255,255,255,0.05);margin:0.8rem 0">
+        <div class="floating-input">
+          {{ form.password(class="fl-control" + (" is-invalid" if form.password.errors else ""), placeholder=" ", id="pfPass") }}
+          {{ form.password.label(class="fl-label") }}
+          <div class="input-line"></div>
+          {% for e in form.password.errors %}<div class="invalid-feedback" style="display:block;">{{ e }}</div>{% endfor %}
+        </div>
+        <div class="floating-input">
+          {{ form.confirm_password(class="fl-control" + (" is-invalid" if form.confirm_password.errors else ""), placeholder=" ") }}
+          {{ form.confirm_password.label(class="fl-label") }}
+          <div class="input-line"></div>
+          {% for e in form.confirm_password.errors %}<div class="invalid-feedback" style="display:block;">{{ e }}</div>{% endfor %}
+        </div>
+        {{ form.submit(class="btn-save") }}
+      </form>
+    </div>
+
+    <div class="perf-card fade-slide">
+      <div class="pc-title"><i class="bi bi-activity"></i>Mi Actividad</div>
+      <div class="stats-mini">
+        <div class="sm-item"><div class="sm-num">{{ total_reportados }}</div><div class="sm-lbl">Reportados</div></div>
+        <div class="sm-item"><div class="sm-num">{{ verificados }}</div><div class="sm-lbl">Verificados</div></div>
+        <div class="sm-item"><div class="sm-num">{{ pendientes }}</div><div class="sm-lbl">Pendientes</div></div>
+      </div>
+
+      <div class="pc-title" style="margin-top:1rem;font-size:0.65rem;"><i class="bi bi-exclamation-triangle"></i>Últimos incidentes</div>
+      {% if mis_incidentes %}
+        {% for inc in mis_incidentes %}
+        <a href="{{ url_for('incidentes.detalle', id=inc.id) }}" class="act-item text-decoration-none">
+          <span class="act-dot" data-style-bg="{{ inc.tipo_incidente.color if inc.tipo_incidente and inc.tipo_incidente.color else '#6c757d' }}"></span>
+          <div class="act-body">
+            <div class="act-txt">{{ inc.tipo }}{% if inc.evidencias.count() > 0 %} 📸{% endif %}</div>
+            <div class="act-meta">{{ inc.fecha_hora|bolivia if inc.fecha_hora else '' }} · {{ inc.riesgo_nivel }}</div>
+          </div>
+          <span class="act-badge" data-style-bg="{{ 'rgba(15,118,110,0.12)' if inc.verificado else 'rgba(255,255,255,0.05)' }}" data-style-color="{{ 'var(--sidebar-accent)' if inc.verificado else 'rgba(255,255,255,0.3)' }}">{{ '✅' if inc.verificado else '◉' }}</span>
+        </a>
+        {% endfor %}
+      {% else %}
+        <div class="empty-state">Aún no reportaste incidentes</div>
+      {% endif %}
+
+      <div class="pc-title" style="margin-top:0.8rem;font-size:0.65rem;"><i class="bi bi-bell"></i>Últimas alertas</div>
+      {% if mis_alertas %}
+        {% for al in mis_alertas %}
+        <div class="act-item">
+          <span class="act-dot" data-style-bg="{{ '#ffc107' if not al.leida else 'rgba(255,255,255,0.1)' }}"></span>
+          <div class="act-body">
+            <div class="act-txt">{{ al.tipo.replace('_',' ').title() if al.tipo else 'Alerta' }}</div>
+            <div class="act-meta">{{ al.fecha_envio|bolivia if al.fecha_envio else '' }}{% if al.incidente and al.incidente.evidencias.count() > 0 %} · 📸 con evidencia{% endif %}</div>
+          </div>
+          {% if not al.leida %}<span class="act-badge" style="background:#ffc107;color:#000;">Nueva</span>{% endif %}
+        </div>
+        {% endfor %}
+      {% else %}
+        <div class="empty-state">No tienes alertas aún</div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded',function(){
+  var fi=document.getElementById('fotoInput');
+  var fl=document.getElementById('fuLabel');
+  if(fi){fi.addEventListener('change',function(){
+    fl.textContent=this.files[0]?this.files[0].name:'Cambiar foto de perfil';
+  })}
+});
+</script>
+{% endblock %}

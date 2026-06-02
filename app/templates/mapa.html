@@ -1,0 +1,348 @@
+{% extends "base.html" %}
+{% block title %}Mapa Predictivo - SEGURIDAD VECINAL{% endblock %}
+{% block content %}
+<style>
+@media(max-width:767px){
+  .mapa-controls h5 span{display:none}
+  .mapa-controls{flex-direction:column;gap:0.3rem}
+  .mapa-controls .mapa-views{width:100%;flex-wrap:wrap}
+  .mapa-controls .mapa-views .btn-group{display:flex;width:100%}
+  .mapa-controls .mapa-views .btn-group .btn{flex:1;font-size:0.7rem;padding:0.4rem 0.2rem;min-height:44px}
+  .mapa-controls .mapa-filtro{width:100%!important;min-width:unset!important}
+  .mapa-controls .d-flex.gap-2{flex-direction:column;width:100%}
+}
+</style>
+<div class="d-flex justify-content-between align-items-center mb-3 mapa-controls flex-wrap">
+    <h5 class="mb-0" style="font-size:1rem;"><i class="bi bi-map me-2"></i><span>Mapa Predictivo</span></h5>
+    <div class="d-flex gap-2 mapa-views">
+        <div class="btn-group btn-group-sm" role="group">
+            <input type="radio" class="btn-check" name="mapView" id="viewIncidentes" checked>
+            <label class="btn btn-outline-success" for="viewIncidentes"><i class="bi bi-pin-map"></i> Incidentes</label>
+            <input type="radio" class="btn-check" name="mapView" id="viewHeatmap">
+            <label class="btn btn-outline-warning" for="viewHeatmap"><i class="bi bi-fire"></i> Heatmap</label>
+            <input type="radio" class="btn-check" name="mapView" id="viewPredicciones">
+            <label class="btn btn-outline-danger" for="viewPredicciones"><i class="bi bi-cpu"></i> Predicciones</label>
+        </div>
+        <select id="filtroTipo" class="form-select form-select-sm mapa-filtro" style="width:auto;min-width:100px;border-left:5px solid #6c757d;" data-color-options>
+            <option value="">Todos los tipos</option>
+            {% for t in tipos %}
+            <option value="{{ t.nombre }}" data-color="{{ t.color }}" style="border-left:4px solid {{ t.color }};padding-left:8px;">{{ t.nombre.replace('_',' ')|title }}</option>
+            {% endfor %}
+        </select>
+        <select id="filtroTiempo" class="form-select form-select-sm mapa-filtro" style="width:auto;min-width:90px;">
+            <option value="0">Todos</option>
+            <option value="24">Hoy</option>
+            <option value="168">7 d&iacute;as</option>
+            <option value="360">15 d&iacute;as</option>
+            <option value="720">30 d&iacute;as</option>
+            <option value="2160">3 meses</option>
+            <option value="8760" selected>1 a&ntilde;o</option>
+        </select>
+        <select id="filtroEstado" class="form-select form-select-sm mapa-filtro" style="width:auto;min-width:90px;">
+            <option value="false">Activos</option>
+            <option value="true">Resueltos</option>
+            <option value="all">Todos</option>
+        </select>
+    </div>
+</div>
+<div class="card">
+    <div class="card-body p-1">
+        <div class="position-relative">
+            <div id="searchBarContainer" class="position-absolute p-2" style="z-index:1000;top:10px;right:10px;pointer-events:none;">
+                <div class="input-group input-group-sm" style="pointer-events:auto;max-width:320px;background:#fff;border-radius:8px;box-shadow:0 2px 8px rgba(0,0,0,0.3);">
+                    <input type="text" id="searchBox" class="form-control form-control-sm border-0" placeholder="Buscar lugar..." style="border-radius:8px 0 0 8px;">
+                    <button class="btn btn-sm btn-success" type="button" id="btnSearch" style="border-radius:0 8px 8px 0;"><i class="bi bi-search"></i></button>
+                </div>
+                <div id="searchResults" class="list-group mt-1" style="pointer-events:auto;max-width:320px;max-height:200px;overflow-y:auto;display:none;"></div>
+            </div>
+            <div class="map-container" id="mapaPrincipal"></div>
+        </div>
+    </div>
+</div>
+<div class="row g-2 mt-3 mapa-legend">
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-body py-2 px-3 d-flex align-items-center gap-2">
+                <i class="bi bi-shield-check text-success"></i>
+                <small>Bajo - Zona segura</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-body py-2 px-3 d-flex align-items-center gap-2">
+                <i class="bi bi-exclamation-triangle text-warning"></i>
+                <small>Medio - Precauci&oacute;n</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-body py-2 px-3 d-flex align-items-center gap-2">
+                <i class="bi bi-x-octagon text-danger"></i>
+                <small>Alto - Riesgo elevado</small>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+{% block extra_scripts %}
+<script>
+var mapa, heatLayer, clusterGroup, predLayer;
+var marcadores = [];
+var heatData = [];
+
+document.addEventListener('DOMContentLoaded', function() {
+    var latDefault = -17.7833, lngDefault = -63.1825;
+    mapa = L.map('mapaPrincipal').setView([latDefault, lngDefault], 13);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; OpenStreetMap',
+        maxZoom: 18,
+    }).addTo(mapa);
+
+    setTimeout(function() { mapa.invalidateSize(); }, 100);
+    mapa.zoomControl.setPosition('bottomright');
+
+    var urlView = new URLSearchParams(window.location.search).get('view');
+    if (urlView === 'predicciones') {
+        document.getElementById('viewPredicciones').checked = true;
+    }
+
+    var locationControl = L.control({ position: 'topleft' });
+    locationControl.onAdd = function() {
+        var btn = L.DomUtil.create('button', 'leaflet-bar leaflet-control leaflet-control-custom');
+        btn.innerHTML = '<i class="bi bi-geo-alt-fill" style="font-size:18px;line-height:30px;display:block;text-align:center;width:34px;height:34px;background:#fff;border-radius:4px;cursor:pointer;"></i>';
+        btn.title = 'Mi ubicación';
+        btn.onclick = function() {
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(
+                    function(pos) { mapa.setView([pos.coords.latitude, pos.coords.longitude], 15); },
+                    function() { alert('No se pudo obtener tu ubicación.'); }
+                );
+            } else {
+                alert('Geolocalización no disponible en este navegador.');
+            }
+        };
+        return btn;
+    };
+    locationControl.addTo(mapa);
+
+    var searchTimeout;
+    var searchBox = document.getElementById('searchBox');
+    var searchResults = document.getElementById('searchResults');
+    var btnSearch = document.getElementById('btnSearch');
+
+    function buscarLugar(query) {
+        if (!query || query.length < 3) { searchResults.style.display = 'none'; return; }
+        fetch('https://nominatim.openstreetmap.org/search?format=json&q=' + encodeURIComponent(query) + '&limit=5&countrycodes=bo')
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+                searchResults.innerHTML = '';
+                if (data.length === 0) {
+                    searchResults.style.display = 'none';
+                    return;
+                }
+                data.forEach(function(item) {
+                    var a = document.createElement('a');
+                    a.className = 'list-group-item list-group-item-action py-1';
+                    a.href = '#';
+                    a.innerHTML = '<small>' + item.display_name.split(',')[0] + ' <span class="text-muted">' + item.display_name.split(',').slice(1,3).join(',') + '</span></small>';
+                    a.addEventListener('click', function(e) {
+                        e.preventDefault();
+                        var lat = parseFloat(item.lat);
+                        var lng = parseFloat(item.lon);
+                        mapa.setView([lat, lng], 16);
+                        L.popup().setLatLng([lat, lng]).setContent('<strong>' + item.display_name.split(',')[0] + '</strong>').openOn(mapa);
+                        searchResults.style.display = 'none';
+                        searchBox.value = item.display_name.split(',')[0];
+                    });
+                    searchResults.appendChild(a);
+                });
+                searchResults.style.display = 'block';
+            });
+    }
+
+    searchBox.addEventListener('input', function() {
+        clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(function() { buscarLugar(searchBox.value); }, 400);
+    });
+
+    searchBox.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') { e.preventDefault(); buscarLugar(searchBox.value); }
+    });
+
+    btnSearch.addEventListener('click', function() { buscarLugar(searchBox.value); });
+
+    document.addEventListener('click', function(e) {
+        if (!e.target.closest('#searchBarContainer')) {
+            searchResults.style.display = 'none';
+        }
+    });
+
+    clusterGroup = L.markerClusterGroup({
+        maxClusterRadius: 50,
+        spiderfyOnMaxZoom: true,
+        disableClusteringAtZoom: 16,
+    });
+
+    cargarIncidentes();
+    cargarPredicciones();
+    cargarHeatmap();
+
+    document.querySelectorAll('input[name="mapView"]').forEach(function(radio) {
+        radio.addEventListener('change', cambiarVista);
+    });
+    document.getElementById('filtroTipo').addEventListener('change', recargarVista);
+    document.getElementById('filtroTiempo').addEventListener('change', recargarVista);
+    document.getElementById('filtroEstado').addEventListener('change', recargarVista);
+
+    cambiarVista();
+});
+
+function recargarVista() {
+    var view = document.querySelector('input[name="mapView"]:checked').id;
+    if (view === 'viewIncidentes') {
+        cargarIncidentes();
+    } else if (view === 'viewHeatmap') {
+        cargarHeatmap();
+        if (heatLayer) mapa.removeLayer(heatLayer);
+        mostrarHeatmap();
+    }
+}
+
+function cambiarVista() {
+    if (clusterGroup) mapa.removeLayer(clusterGroup);
+    if (heatLayer) mapa.removeLayer(heatLayer);
+    if (predLayer) mapa.removeLayer(predLayer);
+
+    var view = document.querySelector('input[name="mapView"]:checked').id;
+    if (view === 'viewIncidentes') {
+        mapa.addLayer(clusterGroup);
+    } else if (view === 'viewHeatmap') {
+        mostrarHeatmap();
+    } else if (view === 'viewPredicciones') {
+        mostrarPredicciones();
+    }
+}
+
+function cargarIncidentes() {
+    var tipo = document.getElementById('filtroTipo').value;
+    var horas = document.getElementById('filtroTiempo').value;
+    var estado = document.getElementById('filtroEstado').value;
+    var url = '/mapa/api/incidentes-recientes';
+    var params = [];
+    if (tipo) params.push('tipo=' + tipo);
+    params.push('horas=' + horas);
+    if (estado !== 'all') params.push('resueltos=' + estado);
+    if (params.length) url += '?' + params.join('&');
+
+    // Remove clusterGroup from map, then clear and rebuild
+    if (mapa && clusterGroup) mapa.removeLayer(clusterGroup);
+    clusterGroup = L.markerClusterGroup({
+        maxClusterRadius: 50,
+        spiderfyOnMaxZoom: true,
+        disableClusteringAtZoom: 16,
+    });
+    fetch(url)
+        .then(r => r.json())
+        .then(data => {
+            data.features.forEach(function(f) {
+                var color = f.properties.tipo_color || '#6c757d';
+                var marker = L.circleMarker([f.geometry.coordinates[1], f.geometry.coordinates[0]], {
+                    radius: 8,
+                    fillColor: color,
+                    color: '#fff',
+                    weight: 2,
+                    opacity: 1,
+                    fillOpacity: 0.8,
+                });
+                var popup = '<strong>' + f.properties.tipo + '</strong><br>' +
+                    (f.properties.descripcion || '') + '<br>' +
+                    '<small>' + f.properties.fecha_hora + '</small><br>' +
+                    '<span class="badge nivel-' + f.properties.riesgo_nivel + '">' + f.properties.riesgo_nivel + '</span>';
+                if (f.properties.resuelto) {
+                    popup += ' <span class="badge bg-info">Resuelto</span>';
+                }
+                popup += (f.properties.verificado ? ' <span class="badge bg-success">Verificado</span>' : '') +
+                    (f.properties.evidencias && f.properties.evidencias.length > 0 ? ' <span class="badge bg-info"><i class="bi bi-camera"></i> ' + f.properties.evidencias.length + '</span>' : '') +
+                    '<br><a href="/incidentes/' + f.properties.id + '" class="small" target="_blank">Ver detalle <i class="bi bi-box-arrow-up-right"></i></a>';
+                marker.bindPopup(popup);
+                clusterGroup.addLayer(marker);
+            });
+            if (document.querySelector('input[name="mapView"]:checked').id === 'viewIncidentes') {
+                mapa.addLayer(clusterGroup);
+            }
+        });
+}
+
+function cargarHeatmap() {
+    var horas = document.getElementById('filtroTiempo').value;
+    var estado = document.getElementById('filtroEstado').value;
+    var url = '/mapa/api/heatmap?horas=' + horas;
+    if (estado !== 'all') url += '&resueltos=' + estado;
+    fetch(url)
+        .then(r => r.json())
+        .then(data => {
+            heatData = data.puntos.map(function(p) {
+                return [p.lat, p.lng, p.peso];
+            });
+        });
+}
+
+function mostrarHeatmap() {
+    heatLayer = L.heatLayer(heatData, {
+        radius: 25,
+        blur: 15,
+        maxZoom: 17,
+        max: 1.0,
+        gradient: { 0.2: '#28a745', 0.5: '#ffc107', 0.8: '#fd7e14', 1.0: '#dc3545' }
+    }).addTo(mapa);
+}
+
+function cargarPredicciones() {
+    fetch('/mapa/api/predicciones')
+        .then(r => r.json())
+        .then(data => {
+            predLayer = L.geoJSON(data, {
+                style: function(feature) {
+                    var opacidad = feature.properties.nivel === 'alto' ? 0.5 :
+                                  feature.properties.nivel === 'medio' ? 0.3 : 0.15;
+                    return {
+                        fillColor: feature.properties.color,
+                        fillOpacity: opacidad,
+                        color: feature.properties.color,
+                        weight: 1,
+                        opacity: 0.6,
+                    };
+                },
+                onEachFeature: function(feature, layer) {
+                    layer.bindPopup(
+                        '<strong>Zona de Riesgo</strong><br>' +
+                        'Nivel: <span class="badge nivel-' + feature.properties.nivel + '">' + feature.properties.nivel + '</span><br>' +
+                        'Probabilidad alta: ' + (feature.properties.prob_alto * 100).toFixed(1) + '%'
+                    );
+                }
+            });
+        });
+}
+
+function mostrarPredicciones() {
+    if (predLayer) mapa.addLayer(predLayer);
+    else {
+        fetch('/mapa/api/predicciones')
+            .then(r => r.json())
+            .then(data => {
+                predLayer = L.geoJSON(data, {
+                    style: function(f) {
+                        var op = f.properties.nivel === 'alto' ? 0.5 : f.properties.nivel === 'medio' ? 0.3 : 0.15;
+                        return { fillColor: f.properties.color, fillOpacity: op, color: f.properties.color, weight: 1, opacity: 0.6 };
+                    },
+                    onEachFeature: function(f, l) {
+                        l.bindPopup('<strong>Zona de Riesgo</strong><br>Nivel: <span class="badge nivel-' + f.properties.nivel + '">' + f.properties.nivel + '</span><br>Prob. alta: ' + (f.properties.prob_alto * 100).toFixed(1) + '%');
+                    }
+                }).addTo(mapa);
+            });
+    }
+}
+</script>
+{% endblock %}

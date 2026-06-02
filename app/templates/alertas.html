@@ -1,0 +1,236 @@
+{% extends "base.html" %}
+{% block title %}Alertas - SEGURIDAD VECINAL{% endblock %}
+{% block content %}
+<style>
+.alerta-wrap{
+  margin:-1rem;padding:1rem;min-height:calc(100vh - 56px);
+  background:var(--bg-dash);color:var(--text-primary)
+}
+@media(min-width:768px){.alerta-wrap{margin:-1.5rem;padding:1.5rem}}
+
+.alerta-wrap .filter-group{margin-bottom:1rem;display:flex;gap:0.5rem;flex-wrap:wrap}
+.alerta-wrap .filter-group .btn-filtro{
+  padding:0.4rem 1rem;border-radius:50px;font-size:0.72rem;font-weight:600;
+  border:1px solid var(--border-color);background:transparent;color:var(--text-muted);transition:all 0.2s;text-decoration:none
+}
+.alerta-wrap .filter-group .btn-filtro:hover{color:var(--text-primary);border-color:var(--sidebar-accent);opacity:0.8}
+.alerta-wrap .filter-group .btn-filtro.active{background:var(--sidebar-active-bg);color:var(--sidebar-accent);border-color:var(--sidebar-accent)}
+html.dark .alerta-wrap .filter-group .btn-filtro.active{color:var(--sidebar-accent);border-color:var(--accent-glow)}
+
+.alerta-card{
+  display:flex;gap:0.75rem;padding:0.9rem 1rem;
+  background:var(--bg-tile);border:1px solid var(--border-tile);
+  border-radius:14px;margin-bottom:0.6rem;
+  transition:all 0.25s;position:relative;overflow:hidden;
+  border-left:3px solid transparent;
+}
+.alerta-card:hover{
+  background:transparent;border-color:var(--border-strong);
+}
+html.dark .alerta-card:hover{background:rgba(255,255,255,0.04);border-color:rgba(255,255,255,0.08)}
+.alerta-card:active{transform:scale(0.99)}
+
+/* Risk border glow */
+.alerta-card.riesgo-alto{border-left-color:#dc3545;background:rgba(220,53,69,0.04)}
+.alerta-card.riesgo-alto::before{
+  content:'';position:absolute;inset:0;
+  background:radial-gradient(ellipse at left,rgba(220,53,69,0.06),transparent 70%);
+  pointer-events:none;
+}
+.alerta-card.riesgo-medio{border-left-color:#ffc107;background:rgba(255,193,7,0.03)}
+.alerta-card.riesgo-bajo{border-left-color:#00e676}
+
+/* Unread glow */
+.alerta-card.no-leida{
+  border-left-width:4px;
+  animation:cardPulse 3s ease-in-out infinite;
+}
+@keyframes cardPulse{
+  0%,100%{box-shadow:inset 3px 0 6px -3px currentColor}
+  50%{box-shadow:inset 3px 0 12px -3px currentColor}
+}
+.alerta-card.no-leida.riesgo-alto{box-shadow:inset 3px 0 12px -3px rgba(220,53,69,0.3)}
+.alerta-card.no-leida.riesgo-medio{box-shadow:inset 3px 0 12px -3px rgba(255,193,7,0.2)}
+.alerta-card .ac-icon{
+  width:38px;height:38px;border-radius:12px;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;font-size:1.1rem;margin-top:0.1rem;
+}
+.alerta-card .ac-icon.icon-alto{background:rgba(220,53,69,0.12);color:#ff6b6b}
+.alerta-card .ac-icon.icon-medio{background:rgba(255,193,7,0.12);color:#ffe066}
+.alerta-card .ac-icon.icon-bajo{background:rgba(0,230,118,0.1);color:#00e676}
+.alerta-card .ac-icon.icon-info{background:rgba(13,202,240,0.1);color:#4fc3f7}
+
+.alerta-card .ac-body{flex:1;min-width:0}
+.alerta-card .ac-body .ac-head{
+  display:flex;justify-content:space-between;align-items:flex-start;gap:0.5rem;margin-bottom:0.2rem;
+}
+.alerta-card .ac-body .ac-head .ac-title{font-weight:600;font-size:0.85rem;color:var(--text-primary)}
+.alerta-card .ac-body .ac-head .ac-time{font-size:0.6rem;color:var(--text-muted);white-space:nowrap;flex-shrink:0;margin-top:0.15rem;opacity:0.6}
+.alerta-card .ac-body .ac-msg{font-size:0.75rem;color:var(--text-muted);margin-bottom:0.35rem;line-height:1.4}
+
+/* Badge row */
+.ac-badges{display:flex;flex-wrap:wrap;align-items:center;gap:0.3rem}
+.ac-badges .ab{padding:0.2rem 0.5rem;border-radius:6px;font-size:0.65rem;font-weight:600;line-height:1.4;white-space:nowrap}
+.ac-badges .ab.evidence{background:rgba(15,118,110,0.1);color:var(--sidebar-accent)}
+.ac-badges .ab.verified{background:rgba(15,118,110,0.1);color:var(--sidebar-accent)}
+.ac-badges .ab.unverified{background:var(--bg-tile);color:var(--text-muted)}
+.ac-badges .ab.reporter{background:transparent;color:var(--text-muted);font-size:0.58rem;padding:0.2rem 0.3rem;opacity:0.6}
+.ac-badges .ab.zona{background:var(--bg-tile);color:var(--text-muted);font-size:0.58rem;opacity:0.6}
+.ac-badges .ab.riesgo{padding:0.15rem 0.45rem;border-radius:4px;font-size:0.58rem;font-weight:700;text-transform:uppercase;letter-spacing:0.3px}
+.ac-badges .ab.riesgo.alto{background:rgba(220,53,69,0.15);color:#ff6b6b}
+.ac-badges .ab.riesgo.medio{background:rgba(255,193,7,0.12);color:#ffe066}
+.ac-badges .ab.riesgo.bajo{background:rgba(0,230,118,0.1);color:#00e676}
+
+.ac-badges .ab.ver-btn{
+  background:var(--sidebar-active-bg);color:var(--sidebar-accent);border:1px solid var(--sidebar-accent);
+  font-size:0.6rem;padding:0.2rem 0.6rem;border-radius:6px;text-decoration:none;transition:all 0.2s;opacity:0.7;
+}
+.ac-badges .ab.ver-btn:hover{opacity:1}
+html.dark .ac-badges .ab.ver-btn{background:var(--accent-glow);color:var(--sidebar-accent);border-color:var(--accent-glow)}
+html.dark .ac-badges .ab.ver-btn:hover{background:rgba(15,118,110,0.15)}
+
+.ac-badges .ab .live-dot{
+  display:inline-block;width:6px;height:6px;border-radius:50%;margin-right:0.25rem;
+  animation:live-blink 1s step-end infinite;vertical-align:middle
+}
+@keyframes live-blink{50%{opacity:0}}
+
+/* Pagination dark */
+.alerta-wrap .pagination .page-link{
+  background:transparent;border:1px solid var(--border-color);color:var(--text-muted);
+  font-size:0.7rem;padding:0.3rem 0.7rem;margin:0 0.1rem;border-radius:8px
+}
+.alerta-wrap .pagination .page-link:hover{color:var(--text-primary);border-color:var(--sidebar-accent);opacity:0.8}
+.alerta-wrap .pagination .page-item.active .page-link{background:var(--sidebar-active-bg);color:var(--sidebar-accent);border-color:var(--sidebar-accent)}
+html.dark .alerta-wrap .pagination .page-item.active .page-link{background:var(--accent-glow);color:var(--sidebar-accent);border-color:var(--accent-glow)}
+
+@media(max-width:576px){
+  .alerta-card{padding:0.8rem 0.7rem;gap:0.6rem}
+  .alerta-card .ac-icon{width:34px;height:34px;font-size:0.95rem;border-radius:10px}
+  .alerta-card .ac-body .ac-head .ac-title{font-size:0.78rem}
+  .alerta-card .ac-body .ac-head .ac-time{font-size:0.55rem}
+  .alerta-card .ac-body .ac-msg{font-size:0.7rem}
+  .ac-badges .ab{font-size:0.6rem}
+  .ac-badges .ab.ver-btn{font-size:0.55rem;padding:0.15rem 0.5rem}
+  .ac-badges .ab.reporter{font-size:0.55rem}
+  .alerta-wrap{padding:0.75rem}
+  .alerta-wrap .filter-group .btn-filtro{padding:0.3rem 0.8rem;font-size:0.65rem}
+}
+</style>
+
+<div class="alerta-wrap">
+  <div class="d-flex justify-content-between align-items-center mb-2">
+    <h5 class="mb-0" style="font-weight:700;font-size:1.1rem;"><i class="bi bi-bell me-2" style="color:var(--sidebar-accent);"></i>Mis Alertas</h5>
+    <button class="btn btn-sm" onclick="marcarTodasLeidas()" style="border:1px solid var(--border-color);border-radius:8px;color:var(--text-muted);font-size:0.7rem;">
+      <i class="bi bi-check-all"></i> Le&iacute;das
+    </button>
+  </div>
+
+  <div class="filter-group">
+    <a href="{{ url_for('alertas.listar_alertas', filtro='todas') }}" class="btn-filtro {{ 'active' if filtro == 'todas' }}">Todas</a>
+    <a href="{{ url_for('alertas.listar_alertas', filtro='no_leidas') }}" class="btn-filtro {{ 'active' if filtro == 'no_leidas' }}">No le&iacute;das</a>
+  </div>
+
+  {% if alertas %}
+  <div>
+    {% for alerta in alertas %}
+    <div class="alerta-card {% if alerta.nivel_riesgo %}riesgo-{{ alerta.nivel_riesgo }}{% endif %} {{ 'no-leida' if not alerta.leida }}"
+         onclick="abrirAlerta(this)" data-url="{% if alerta.incidente_id %}/incidentes/{{ alerta.incidente_id }}{% endif %}" data-id="{{ alerta.id }}" style="cursor:pointer;">
+      <div class="ac-icon {{
+        'icon-alto' if alerta.tipo == 'riesgo_alto' or alerta.nivel_riesgo == 'alto'
+        else 'icon-medio' if alerta.tipo == 'nuevo_incidente'
+        else 'icon-bajo' if alerta.nivel_riesgo == 'bajo'
+        else 'icon-info'
+      }}">
+        {% if alerta.tipo == 'riesgo_alto' %}
+        <i class="bi bi-x-octagon"></i>
+        {% elif alerta.tipo == 'nuevo_incidente' %}
+        <i class="bi bi-exclamation-triangle"></i>
+        {% elif alerta.tipo == 'tendencia' %}
+        <i class="bi bi-graph-up"></i>
+        {% else %}
+        <i class="bi bi-info-circle"></i>
+        {% endif %}
+      </div>
+      <div class="ac-body">
+        <div class="ac-head">
+          <span class="ac-title">{{ alerta.tipo.replace('_', ' ').title() }}</span>
+          <span class="ac-time">{{ alerta.fecha_envio|bolivia if alerta.fecha_envio else '' }}</span>
+        </div>
+        <div class="ac-msg">{{ alerta.mensaje }}</div>
+        <div class="ac-badges">
+          {% if alerta.incidente %}
+            {% set ev_count = alerta.incidente.evidencias.count() %}
+            {% if ev_count > 0 %}
+            <span class="ab evidence"><i class="bi bi-camera me-1"></i>{{ ev_count }} foto(s)</span>
+            {% endif %}
+            {% if alerta.incidente.verificado %}
+            <span class="ab verified"><i class="bi bi-check-circle me-1"></i>Verificado</span>
+            {% else %}
+            <span class="ab unverified"><i class="bi bi-circle me-1"></i>Sin verificar</span>
+            {% endif %}
+            {% if alerta.incidente.reportante %}
+            <span class="ab reporter"><i class="bi bi-person me-1"></i>{{ alerta.incidente.reportante.nombre }}</span>
+            {% endif %}
+            <a href="/incidentes/{{ alerta.incidente_id }}" class="ab ver-btn" onclick="event.stopPropagation();"><i class="bi bi-eye me-1"></i>Detalle</a>
+          {% endif %}
+          {% if alerta.zona_afectada %}
+          <span class="ab zona"><i class="bi bi-geo-alt me-1"></i>{{ alerta.zona_afectada }}</span>
+          {% endif %}
+          {% if alerta.nivel_riesgo %}
+          <span class="ab riesgo {{ alerta.nivel_riesgo }}">{{ alerta.nivel_riesgo }}</span>
+          {% endif %}
+          {% if not alerta.leida %}
+          <span class="ab" style="color:#ffc107;"><span class="live-dot" style="background:#ffc107;"></span>Nueva</span>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+
+  {% if pagination.pages > 1 %}
+  <nav class="mt-3">
+    <ul class="pagination justify-content-center">
+      {% for p in range(1, pagination.pages + 1) %}
+      <li class="page-item {{ 'active' if p == page }}">
+        <a class="page-link" href="{{ url_for('alertas.listar_alertas', page=p, filtro=filtro) }}">{{ p }}</a>
+      </li>
+      {% endfor %}
+    </ul>
+  </nav>
+  {% endif %}
+
+  {% else %}
+  <div style="text-align:center;padding:3rem 1rem;color:rgba(255,255,255,0.15);">
+    <i class="bi bi-bell-slash" style="font-size:2.5rem;"></i>
+    <p style="margin-top:0.5rem;font-size:0.8rem;">No tienes alertas {{ 'no leídas' if filtro == 'no_leidas' else '' }}.</p>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}
+{% block extra_scripts %}
+<script>
+function abrirAlerta(el) {
+    var id = el.dataset.id;
+    var url = el.dataset.url;
+    if (url) {
+        fetch('/alertas/api/marcar-leida/' + id, { method: 'PUT' }).then(function() {
+            window.location = url;
+        });
+        return;
+    }
+    marcarLeida(id);
+}
+function marcarLeida(id) {
+    fetch('/alertas/api/marcar-leida/' + id, { method: 'PUT' })
+        .then(r => r.json())
+        .then(d => { if (d.success) location.reload(); });
+}
+function marcarTodasLeidas() {
+    fetch('/alertas/api/marcar-todas-leidas', { method: 'PUT' })
+        .then(r => r.json())
+        .then(d => { if (d.success) location.reload(); });
+}
+</script>
+{% endblock %}

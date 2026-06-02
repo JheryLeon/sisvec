@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+{% block title %}Incidente #{{ inc.id }} - SEGURIDAD VECINAL{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h5 class="mb-0"><i class="bi bi-info-circle me-2"></i>Incidente #{{ inc.id }}</h5>
+    <a href="{{ url_for('incidentes.lista_incidentes') }}" class="btn btn-sm btn-outline-secondary"><i class="bi bi-arrow-left"></i> Volver</a>
+</div>
+<div class="row g-3">
+    <div class="col-md-7">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span><i class="bi bi-pin-map me-2"></i>{{ inc.tipo }}</span>
+                <span class="badge nivel-{{ inc.riesgo_nivel }}">{{ inc.riesgo_nivel }}</span>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <small class="text-muted">Descripción</small>
+                    <p class="mb-0">{{ inc.descripcion or 'Sin descripción' }}</p>
+                </div>
+                <div class="row g-2 mb-3">
+                    <div class="col-6"><small class="text-muted">Fecha</small><div>{{ inc.fecha_hora|bolivia if inc.fecha_hora else '—' }}</div></div>
+                    <div class="col-6"><small class="text-muted">Dirección</small><div>{{ inc.direccion or '—' }}</div></div>
+                    <div class="col-6"><small class="text-muted">Latitud</small><div>{{ '%.6f'|format(inc.latitud) }}</div></div>
+                    <div class="col-6"><small class="text-muted">Longitud</small><div>{{ '%.6f'|format(inc.longitud) }}</div></div>
+                    <div class="col-6"><small class="text-muted">Estado</small><div>{% if inc.resuelto %}<span class="badge bg-info">Resuelto</span>{% elif inc.verificado %}<span class="badge bg-success">Verificado</span>{% else %}<span class="badge bg-secondary">Pendiente</span>{% endif %}</div></div>
+                    <div class="col-6"><small class="text-muted">Reportado por</small><div>{{ inc.reportante.nombre if inc.reportante else '—' }}</div></div>
+                </div>
+                <div id="mapaDetalle" style="height: 250px; border-radius: 0.5rem;"></div>
+                {% if not inc.resuelto and (current_user.es_admin() or current_user.es_junta() or current_user.id == inc.reportado_por) %}
+                <form method="POST" action="{{ url_for('incidentes.api_marcar_resuelto', id=inc.id) }}" class="mt-2">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button type="submit" class="btn btn-sm btn-outline-info w-100" onclick="return confirm('Marcar este incidente como resuelto?')">
+                        <i class="bi bi-check-circle"></i> Marcar como resuelto
+                    </button>
+                </form>
+                {% endif %}
+                {% if inc.resuelto and inc.resuelto_por %}
+                <div class="mt-2 text-muted small text-center">
+                    Resuelto por {{ inc.resuelto_por_usuario.nombre if inc.resuelto_por_usuario else '—' }}
+                    {% if inc.fecha_resolucion %}el {{ inc.fecha_resolucion|bolivia }}{% endif %}
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    <div class="col-md-5">
+        <div class="card">
+            <div class="card-header"><i class="bi bi-camera me-2"></i>Evidencias ({{ evidencias|length }})</div>
+            <div class="card-body">
+                {% if evidencias %}
+                <div class="row g-2" id="galeriaEvidencias">
+                    {% for ev in evidencias %}
+                    <div class="col-6">
+                        <a href="{{ url_for('static', filename=ev.archivo_url) }}" target="_blank" class="text-decoration-none">
+                            <img src="{{ url_for('static', filename=ev.archivo_url) }}" class="img-fluid rounded" style="height:120px;width:100%;object-fit:cover;" loading="lazy">
+                        </a>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <p class="text-muted small mb-0">No hay evidencias para este incidente.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+<span id="incLocation"
+  data-lat="{{ inc.latitud }}"
+  data-lng="{{ inc.longitud }}"
+  data-tipo="{{ inc.tipo }}"
+  data-desc="{{ inc.descripcion[:50] if inc.descripcion else '' }}"
+  hidden></span>
+{% endblock %}
+{% block extra_scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    var d = document.getElementById('incLocation');
+    var lat = parseFloat(d.dataset.lat);
+    var lng = parseFloat(d.dataset.lng);
+    var mapa = L.map('mapaDetalle').setView([lat, lng], 15);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 18 }).addTo(mapa);
+    L.circleMarker([lat, lng], {
+        radius: 10, fillColor: '#dc3545', color: '#fff', weight: 2, fillOpacity: 0.8
+    }).addTo(mapa).bindPopup('<strong>' + d.dataset.tipo + '</strong><br>' + d.dataset.desc);
+    setTimeout(function() { mapa.invalidateSize(); }, 300);
+});
+</script>
+{% endblock %}

@@ -1,0 +1,116 @@
+{% extends "base.html" %}
+{% block title %}Reportes - SEGURIDAD VECINAL{% endblock %}
+{% block content %}
+<div class="row g-3">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header"><i class="bi bi-file-earmark-bar-graph me-2"></i>Exportación de Datos</div>
+            <div class="card-body">
+                <form id="formExportar" class="row g-3" method="GET">
+                    <div class="col-md-6">
+                        <label class="form-label">Fecha desde</label>
+                        <input type="date" class="form-control" name="fecha_desde" value="{{ fecha_desde }}">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Fecha hasta</label>
+                        <input type="date" class="form-control" name="fecha_hasta" value="{{ fecha_hasta }}">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Tipo de incidente</label>
+                        <select class="form-select" name="tipo" style="border-left:5px solid #6c757d;" data-color-options>
+                            <option value="">Todos</option>
+                            {% for t in tipos %}
+                            <option value="{{ t.nombre }}" data-color="{{ t.color }}" style="border-left:4px solid {{ t.color }};padding-left:8px;">{{ t.nombre.replace('_',' ')|title }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Nivel de riesgo</label>
+                        <select class="form-select" name="riesgo">
+                            <option value="">Todos</option>
+                            <option value="bajo">Bajo</option>
+                            <option value="medio">Medio</option>
+                            <option value="alto">Alto</option>
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Formato</label>
+                        <select class="form-select" id="expFormato" onchange="cambiarAccion()">
+                            <option value="excel">Excel (.xlsx)</option>
+                            <option value="pdf">PDF</option>
+                            <option value="csv">CSV</option>
+                        </select>
+                    </div>
+                    <div class="col-12">
+                        <button type="submit" class="btn btn-success">
+                            <i class="bi bi-download me-2"></i>Exportar
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header"><i class="bi bi-info-circle me-2"></i>Información</div>
+            <div class="card-body">
+                <p class="small text-muted">
+                    <i class="bi bi-check-circle text-success"></i> Los datos incluyen incidentes reportados en el período seleccionado.
+                </p>
+        
+                <hr>
+                <h6>Vista Previa de Estadísticas</h6>
+                <div id="statsPrev">
+                    <div class="d-flex justify-content-between mb-1">
+                        <span>Total 30 días</span>
+                        <span class="fw-bold" id="prevTotal">—</span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-1">
+                        <span>Riesgo alto</span>
+                        <span class="fw-bold text-danger" id="prevAltos">—</span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-1">
+                        <span>Riesgo medio</span>
+                        <span class="fw-bold text-warning" id="prevMedios">—</span>
+                    </div>
+                    <div class="d-flex justify-content-between">
+                        <span>Reportantes</span>
+                        <span class="fw-bold" id="prevReportantes">—</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="row g-3 mt-2">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header"><i class="bi bi-map me-2"></i>Santa Cruz de la Sierra</div>
+            <div class="card-body p-1">
+                <div id="mapaExportSC" style="height: 300px; border-radius: 0.5rem;"></div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+{% block extra_scripts %}
+<span id="exportUrls"
+  data-excel="{{ url_for('routes.exportar_excel') }}"
+  data-pdf="{{ url_for('routes.exportar_pdf') }}"
+  data-csv="{{ url_for('routes.exportar_csv') }}"
+  hidden></span>
+<script>
+var expUrls = document.getElementById('exportUrls').dataset;
+document.getElementById('formExportar').action = expUrls.excel;
+function cambiarAccion() {
+    var f = document.getElementById('formExportar');
+    var fmt = document.getElementById('expFormato').value;
+    f.action = expUrls[fmt] || expUrls.excel;
+}
+document.addEventListener('DOMContentLoaded', function() {
+    var mapa = L.map('mapaExportSC').setView([-17.7833, -63.1825], 13);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 18 }).addTo(mapa);
+    L.marker([-17.7833, -63.1825]).addTo(mapa).bindPopup('<strong>Santa Cruz de la Sierra</strong><br>Plaza 24 de Septiembre');
+});
+</script>
+{% endblock %}
