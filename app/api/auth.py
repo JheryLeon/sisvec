@@ -5,10 +5,10 @@ from flask_login import login_user, logout_user, login_required, current_user
 from werkzeug.utils import secure_filename
 
 from app.models import Usuario, UserSession
-from app.forms import LoginForm, RegisterForm
+from app.forms import LoginForm, RegisterForm, ForgotPasswordForm, ResetPasswordForm
 from app import db, limiter
-from app.utils.tokens import generar_token
-from app.utils.email_sender import enviar_verificacion_email
+from app.utils.tokens import generar_token, verificar_token
+from app.utils.email_sender import enviar_verificacion_email, enviar_reset_password_email
 
 auth_bp = Blueprint("auth", __name__, url_prefix="/auth")
 
@@ -151,6 +151,61 @@ def verify_email(token):
 
     flash("Email verificado exitosamente. Ya podés iniciar sesión.", "success")
     return redirect(url_for("auth.login"))
+
+
+@auth_bp.route("/forgot-password", methods=["GET", "POST"])
+@limiter.limit("5 per minute")
+def forgot_password():
+    if current_user.is_authenticated:
+        return redirect(url_for("routes.dashboard"))
+
+    form = ForgotPasswordForm()
+    if form.validate_on_submit():
+        email = form.email.data.strip().lower()
+        user = Usuario.query.filter_by(email=email).first()
+
+        if user and user.email_verified:
+            token = generar_token(user.email, salt="password-reset")
+            enviar_reset_password_email(user, token)
+
+        flash(
+            "Si el email está registrado y verificado, recibirás un enlace para restablecer tu contraseña.",
+            "success",
+        )
+        return redirect(url_for("auth.login"))
+
+    return render_template("forgot_password.html", form=form)
+
+
+@auth_bp.route("/reset-password/<token>", methods=["GET", "POST"])
+@limiter.limit("5 per minute")
+def reset_password(token):
+    if current_user.is_authenticated:
+        return redirect(url_for("routes.dashboard"))
+
+    email = verificar_token(token, max_age=3600, salt="password-reset")
+    if not email:
+        flash("El enlace es inválido o expiró (1 hora). Solicitá uno nuevo.", "error")
+        return redirect(url_for("auth.forgot_password"))
+
+    user = Usuario.query.filter_by(email=email).first()
+    if not user:
+        flash("Usuario no encontrado.", "error")
+        return redirect(url_for("auth.login"))
+
+    form = ResetPasswordForm()
+    if form.validate_on_submit():
+        if form.password.data != form.confirm_password.data:
+            flash("Las contraseñas no coinciden.", "error")
+            return render_template("reset_password.html", form=form)
+
+        user.set_password(form.password.data)
+        db.session.commit()
+
+        flash("Contraseña restablecida exitosamente. Ya podés iniciar sesión.", "success")
+        return redirect(url_for("auth.login"))
+
+    return render_template("reset_password.html", form=form)
 
 
 @auth_bp.route("/logout")

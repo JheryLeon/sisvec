@@ -9,7 +9,7 @@ import os, sys
 
 # Forzar FLASK_ENV=production para que wsgi.py lo tome
 os.environ.setdefault("FLASK_ENV", "production")
-os.environ.setdefault("APP_URL", "https://sisvec.onrender.com")
+os.environ.setdefault("APP_URL", "https://seguridadvecinal.onrender.com")
 
 # Importar app
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))

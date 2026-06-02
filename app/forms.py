@@ -78,3 +78,14 @@ class PerfilForm(FlaskForm):
             (b.id, f"{b.nombre} ({b.ciudad})" if b.ciudad else b.nombre)
             for b in Barrio.query.order_by(Barrio.nombre).all()
         ]
+
+
+class ForgotPasswordForm(FlaskForm):
+    email = StringField("Email", validators=[DataRequired(), Length(max=255)], render_kw={"placeholder": "tu@email.com"})
+    submit = SubmitField("Enviar enlace")
+
+
+class ResetPasswordForm(FlaskForm):
+    password = PasswordField("Nueva Contraseña", validators=[DataRequired(), Length(min=6, max=128)], render_kw={"placeholder": "Mínimo 6 caracteres"})
+    confirm_password = PasswordField("Confirmar Contraseña", validators=[DataRequired()], render_kw={"placeholder": "Repite la contraseña"})
+    submit = SubmitField("Restablecer contraseña")

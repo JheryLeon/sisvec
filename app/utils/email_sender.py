@@ -46,3 +46,19 @@ def enviar_verificacion_email(usuario, token):
         "<hr><p style='color:#888;font-size:12px;'>SISVEC - Sistema de Seguridad Predictiva Vecinal</p>"
     )
     return enviar_email(usuario.email, asunto, cuerpo)
+
+
+def enviar_reset_password_email(usuario, token):
+    asunto = "Restablece tu contraseña - SISVEC"
+    link = f"{current_app.config.get('APP_URL', 'http://localhost:5000')}/auth/reset-password/{token}"
+    cuerpo = (
+        "<h2>Restablecer contraseña</h2>"
+        f"<p>Hola <b>{usuario.nombre}</b>,</p>"
+        "<p>Recibimos una solicitud para restablecer tu contraseña. Hacé clic en el siguiente enlace:</p>"
+        f'<p><a href="{link}" style="display:inline-block;padding:12px 24px;background:#dc3545;color:#fff;text-decoration:none;border-radius:6px;">Restablecer contraseña</a></p>'
+        f"<p>O copiá este enlace en tu navegador:</p>"
+        f"<p><code>{link}</code></p>"
+        "<p>Este enlace expira en 1 hora. Si no solicitaste esto, ignorá este mensaje.</p>"
+        "<hr><p style='color:#888;font-size:12px;'>SISVEC - Sistema de Seguridad Predictiva Vecinal</p>"
+    )
+    return enviar_email(usuario.email, asunto, cuerpo)
