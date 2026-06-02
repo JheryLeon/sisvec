@@ -19,8 +19,12 @@ def reportar():
         tipo_obj = TipoIncidente.query.get(form.tipo_incidente_id.data)
         fecha_raw = form.fecha_hora.data
         if fecha_raw:
-            bolivia_tz = timezone(timedelta(hours=-4))
-            fecha_utc = fecha_raw.replace(tzinfo=bolivia_tz).astimezone(timezone.utc)
+            try:
+                tz_offset_min = int(request.form.get("tz_offset", 240))
+                local_tz = timezone(timedelta(minutes=-tz_offset_min))
+                fecha_utc = fecha_raw.replace(tzinfo=local_tz).astimezone(timezone.utc)
+            except Exception:
+                fecha_utc = fecha_raw.replace(tzinfo=timezone.utc)
         else:
             fecha_utc = datetime.now(timezone.utc)
         incidente = Incidente(

@@ -10,6 +10,7 @@
             <div class="card-body">
                 <form method="POST" action="{{ url_for('incidentes.reportar') }}" id="formReporte" enctype="multipart/form-data">
                     {{ form.hidden_tag() }}
+                    <input type="hidden" name="tz_offset" id="tz_offset" value="">
                     <div class="row g-3">
                         <div class="col-md-6">
                             <label class="form-label" for="tipo_incidente_id">Tipo de Incidente</label>
@@ -24,7 +25,7 @@
                         <div class="col-md-6">
                             {{ form.fecha_hora.label(class="form-label") }}
                             {{ form.fecha_hora(class="form-control" + (" is-invalid" if form.fecha_hora.errors else ""), type="datetime-local") }}
-                            <small class="text-muted">Hora Bolivia (UTC-4). </small>
+                            <small class="text-muted">Hora local. </small>
                             {% for error in form.fecha_hora.errors %}<div class="invalid-feedback">{{ error }}</div>{% endfor %}
                         </div>
                         <div class="col-12">
@@ -208,11 +209,14 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
+    document.getElementById('tz_offset').value = new Date().getTimezoneOffset();
+
     var fh = document.getElementById('fecha_hora');
     if (fh && !fh.value) {
         var ahora = new Date();
-        var bolivia = new Date(ahora.getTime() - (ahora.getTimezoneOffset() + 240) * 60000);
-        fh.value = bolivia.toISOString().slice(0, 16);
+        var pad = function(n) { return String(n).padStart(2, '0'); };
+        fh.value = ahora.getFullYear() + '-' + pad(ahora.getMonth() + 1) + '-' + pad(ahora.getDate()) +
+            'T' + pad(ahora.getHours()) + ':' + pad(ahora.getMinutes());
     }
     fh.addEventListener('input', function() { this.dataset.userEdited = 'true'; });
 });

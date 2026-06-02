@@ -256,9 +256,10 @@ function cargarIncidentes() {
                     opacity: 1,
                     fillOpacity: 0.8,
                 });
+                var fechaStr = f.properties.fecha_hora ? new Date(f.properties.fecha_hora).toLocaleString() : '';
                 var popup = '<strong>' + f.properties.tipo + '</strong><br>' +
                     (f.properties.descripcion || '') + '<br>' +
-                    '<small>' + f.properties.fecha_hora + '</small><br>' +
+                    '<small>' + fechaStr + '</small><br>' +
                     '<span class="badge nivel-' + f.properties.riesgo_nivel + '">' + f.properties.riesgo_nivel + '</span>';
                 if (f.properties.resuelto) {
                     popup += ' <span class="badge bg-info">Resuelto</span>';
