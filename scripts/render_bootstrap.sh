@@ -19,6 +19,10 @@ with app.app_context():
     from app import db
     from app.models import Rol, Barrio, Usuario, TipoIncidente, TipoAlerta
 
+    # ── 0. Crear tablas desde modelos (BD nueva) ──
+    db.create_all()
+    print("[bootstrap] Tablas creadas/verificadas desde modelos")
+
     # ── 1. Migraciones de columnas faltantes ──
     engine = db.engine
     inspector = db.inspect(engine)
