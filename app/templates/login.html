@@ -346,15 +346,11 @@
 
                     </form>
 
-                    {% if unverified_email %}
+                    {% if session.unverified_email %}
                     <div class="text-center mt-2 fade-in-item">
-                        <form method="POST" action="{{ url_for('auth.resend_verification') }}">
-                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                            <input type="hidden" name="email" value="{{ unverified_email }}">
-                            <button type="submit" class="btn btn-sm btn-link text-decoration-none small" style="color: #ffc107;">
-                                <i class="bi bi-envelope-arrow-up"></i> Reenviar verificacion
-                            </button>
-                        </form>
+                        <a href="{{ url_for('auth.resend_verification') }}" class="btn btn-sm btn-link text-decoration-none small" style="color: #ffc107;">
+                            <i class="bi bi-envelope-arrow-up"></i> Reenviar verificacion
+                        </a>
                     </div>
                     {% endif %}
 

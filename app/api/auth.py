@@ -1,6 +1,6 @@
 import traceback, os, time, secrets
 from datetime import datetime, timezone
-from flask import Blueprint, render_template, redirect, url_for, flash, request, jsonify, current_app, make_response
+from flask import Blueprint, render_template, redirect, url_for, flash, request, jsonify, current_app, make_response, session
 from flask_login import login_user, logout_user, login_required, current_user
 from werkzeug.utils import secure_filename
 
@@ -31,12 +31,13 @@ def login():
                 return render_template("login.html", form=form)
 
             if not user.email_verified:
+                session["unverified_email"] = email
                 flash(
                     "Debés verificar tu email antes de iniciar sesión. "
                     "Revisá tu bandeja de entrada (y spam).",
                     "warning",
                 )
-                return render_template("login.html", form=form, unverified_email=email)
+                return render_template("login.html", form=form)
 
             # -- Session limit: remove oldest if at limit (max 2) --
             active_sessions = UserSession.query.filter_by(user_id=user.id).order_by(UserSession.last_activity.asc()).all()
@@ -215,26 +216,15 @@ def reset_password(token):
     return render_template("reset_password.html", form=form)
 
 
-@auth_bp.route("/resend-verification", methods=["GET", "POST"])
+@auth_bp.route("/resend-verification", methods=["GET"])
 @limiter.limit("3 per minute")
 def resend_verification():
-    if request.method == "GET":
+    email = session.pop("unverified_email", None)
+    if not email:
+        flash("No hay solicitud pendiente de verificación.", "info")
         return redirect(url_for("auth.login"))
 
     try:
-        from flask_wtf import FlaskForm
-        from wtforms import StringField
-        from wtforms.validators import DataRequired
-
-        class _ResendForm(FlaskForm):
-            email = StringField("Email", validators=[DataRequired()])
-
-        form = _ResendForm()
-        if not form.validate_on_submit():
-            flash("Solicitud invalida. Intenta de nuevo.", "error")
-            return redirect(url_for("auth.login"))
-
-        email = form.email.data.strip().lower()
         user = Usuario.query.filter_by(email=email).first()
         if user and not user.email_verified:
             token = generar_token(user.email)
