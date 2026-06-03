@@ -299,18 +299,13 @@ def api_resumen_stats():
 
 
 @incidentes_bp.route("/api/stats/dashboard", methods=["GET"])
-@login_required
 def api_dashboard_stats():
     total_incidentes = Incidente.query.count()
     total_vecinos = Usuario.query.join(Rol).filter(Rol.nombre == "vecino").count()
     total_alertas = Alerta.query.count()
-    alertas_no_leidas = Alerta.query.filter_by(
-        usuario_id=current_user.id, leida=False
-    ).count()
 
     return jsonify({
         "total_incidentes": total_incidentes,
         "total_vecinos": total_vecinos,
         "total_alertas": total_alertas,
-        "alertas_no_leidas": alertas_no_leidas,
     })

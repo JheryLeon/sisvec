@@ -3,7 +3,7 @@ from io import BytesIO
 from flask import Blueprint, render_template, redirect, url_for, request, send_file, flash, current_app
 from flask_login import login_required, current_user
 from werkzeug.utils import secure_filename
-from app.models import Incidente, Prediccion, Usuario, Alerta, TipoIncidente, Evidencia
+from app.models import Incidente, Prediccion, Usuario, Alerta, TipoIncidente, Evidencia, Rol
 from app.utils.ml_model import obtener_resumen_riesgo_actual
 from app.utils.security import junta_or_admin_required
 from app.forms import PerfilForm
@@ -79,6 +79,9 @@ def dashboard():
         usuario_id=current_user.id, leida=False
     ).count()
 
+    total_incidentes_all = Incidente.query.count()
+    total_vecinos = Usuario.query.join(Rol).filter(Rol.nombre == "vecino").count()
+    total_alertas = Alerta.query.count()
     total_usuarios = Usuario.query.count()
     verificados_30d = Incidente.query.filter(
         Incidente.fecha_hora >= hace_30_dias, Incidente.verificado == True
@@ -102,6 +105,9 @@ def dashboard():
     return render_template(
         template,
         total_incidentes=total_incidentes,
+        total_incidentes_all=total_incidentes_all,
+        total_vecinos=total_vecinos,
+        total_alertas=total_alertas,
         riesgo_actual=riesgo_actual,
         altos_30d=altos_30d,
         reportantes_unicos=reportantes_unicos,

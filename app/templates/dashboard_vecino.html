@@ -391,20 +391,20 @@
     </div>
 
     <div class="v-stats">
-        <div class="v-stat fade-slide" id="v-stat-reportes">
+        <div class="v-stat fade-slide" id="v-stat-incidentes">
             <div class="v-icon" style="color:var(--sidebar-accent);"><i class="bi bi-shield-check"></i></div>
-            <div class="v-num" data-n="{{ total_incidentes }}">0</div>
-            <div class="v-lbl">Reportes (30d)</div>
+            <div class="v-num" data-n="{{ total_incidentes_all }}">0</div>
+            <div class="v-lbl">Incidentes</div>
         </div>
         <div class="v-stat fade-slide" id="v-stat-alertas">
             <div class="v-icon" style="color:#ffe066;"><i class="bi bi-bell"></i></div>
-            <div class="v-num">{{ alertas_no_leidas }}</div>
-            <div class="v-lbl">Alertas pendientes</div>
+            <div class="v-num">{{ total_alertas }}</div>
+            <div class="v-lbl">Alertas</div>
         </div>
         <div class="v-stat fade-slide">
             <div class="v-icon" style="color:#4fc3f7;"><i class="bi bi-people"></i></div>
-            <div class="v-num">{{ reportantes_unicos }}</div>
-            <div class="v-lbl">Vecinos reportando</div>
+            <div class="v-num">{{ total_vecinos }}</div>
+            <div class="v-lbl">Vecinos</div>
         </div>
     </div>
 
@@ -537,10 +537,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function actualizarStats() {
         fetch('/incidentes/api/stats/dashboard').then(function(r) { return r.json(); }).then(function(d) {
-            var rep = document.querySelector('#v-stat-reportes .v-num');
-            var alt = document.querySelector('#v-stat-alertas .v-num');
-            if (rep) rep.textContent = d.total_incidentes;
-            if (alt) alt.textContent = d.alertas_no_leidas;
+            document.querySelector('#v-stat-incidentes .v-num').textContent = d.total_incidentes;
+            document.querySelector('#v-stat-alertas .v-num').textContent = d.total_alertas;
         }).catch(function(e) { console.log('Stats poll error', e); });
     }
     setInterval(actualizarStats, 30000);

@@ -389,20 +389,20 @@
         <div class="stat-tile fade-up" id="tile-incidentes">
             <div class="tile-glow" style="background:var(--sidebar-accent);"></div>
             <div class="tile-icon" style="color:var(--sidebar-accent);"><i class="bi bi-exclamation-triangle"></i></div>
-            <div class="tile-num" data-count="{{ total_incidentes }}">0</div>
+            <div class="tile-num" data-count="{{ total_incidentes_all }}">0</div>
             <div class="tile-label">Incidentes</div>
         </div>
         <div class="stat-tile fade-up" id="tile-vecinos">
             <div class="tile-glow" style="background:#ffe066;"></div>
             <div class="tile-icon" style="color:#ffe066;"><i class="bi bi-people"></i></div>
-            <div class="tile-num" data-count="{{ total_usuarios }}">0</div>
+            <div class="tile-num" data-count="{{ total_vecinos }}">0</div>
             <div class="tile-label">Vecinos</div>
         </div>
         <div class="stat-tile fade-up" id="tile-alertas">
             <div class="tile-glow" style="background:#ff6b6b;"></div>
             <div class="tile-icon" style="color:#ff6b6b;"><i class="bi bi-bell"></i></div>
-            <div class="tile-num" data-count="{{ alertas_no_leidas }}">0</div>
-            <div class="tile-label">Alertas pendientes</div>
+            <div class="tile-num" data-count="{{ total_alertas }}">0</div>
+            <div class="tile-label">Alertas</div>
         </div>
         <div class="stat-tile fade-up" id="tile-zonas">
             <div class="tile-glow" style="background:#4fc3f7;"></div>
@@ -596,12 +596,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function actualizarStats() {
         fetch('/incidentes/api/stats/dashboard').then(function(r) { return r.json(); }).then(function(d) {
-            var inc = document.querySelector('#tile-incidentes .tile-num');
-            var vec = document.querySelector('#tile-vecinos .tile-num');
-            var alt = document.querySelector('#tile-alertas .tile-num');
-            if (inc) inc.textContent = d.total_incidentes;
-            if (vec) vec.textContent = d.total_vecinos;
-            if (alt) alt.textContent = d.alertas_no_leidas;
+            document.querySelector('#tile-incidentes .tile-num').textContent = d.total_incidentes;
+            document.querySelector('#tile-vecinos .tile-num').textContent = d.total_vecinos;
+            document.querySelector('#tile-alertas .tile-num').textContent = d.total_alertas;
         }).catch(function(e) { console.log('Stats poll error', e); });
     }
     setInterval(actualizarStats, 30000);
