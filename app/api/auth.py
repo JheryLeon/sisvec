@@ -1,6 +1,6 @@
 import traceback, os, time, secrets
 from datetime import datetime, timezone
-from flask import Blueprint, render_template, redirect, url_for, flash, request, jsonify, current_app, make_response
+from flask import Blueprint, render_template, redirect, url_for, flash, request, jsonify, current_app, make_response, session as flask_session
 from flask_login import login_user, logout_user, login_required, current_user
 from werkzeug.utils import secure_filename
 
@@ -31,12 +31,13 @@ def login():
                 return render_template("login.html", form=form)
 
             if not user.email_verified:
+                flask_session["unverified_email"] = email
                 flash(
                     "Debés verificar tu email antes de iniciar sesión. "
                     "Revisá tu bandeja de entrada (y spam).",
                     "warning",
                 )
-                return render_template("login.html", form=form, unverified_email=email)
+                return render_template("login.html", form=form)
 
             # -- Session limit: remove oldest if at limit (max 2) --
             active_sessions = UserSession.query.filter_by(user_id=user.id).order_by(UserSession.last_activity.asc()).all()
@@ -44,13 +45,13 @@ def login():
                 db.session.delete(active_sessions[0])
 
             token = secrets.token_hex(32)
-            session = UserSession(
+            user_session = UserSession(
                 user_id=user.id,
                 token=token,
                 ip_address=request.remote_addr,
                 user_agent=request.user_agent.string[:300] if request.user_agent else None,
             )
-            db.session.add(session)
+            db.session.add(user_session)
             db.session.commit()
 
             login_user(user)
@@ -215,35 +216,22 @@ def reset_password(token):
     return render_template("reset_password.html", form=form)
 
 
-@auth_bp.route("/ping")
-def ping():
-    return "pong"
-
-
 @auth_bp.route("/resend-verification", methods=["GET"])
 def resend_verification():
-    print("[resend] INICIO")
-    email = request.args.get("email", "").strip().lower()
-    print(f"[resend] email={email}")
+    email = flask_session.pop("unverified_email", None)
     if not email:
-        flash("Email requerido.", "error")
+        flash("No hay solicitud pendiente de verificación.", "info")
         return redirect(url_for("auth.login"))
 
-    try:
-        print(f"[resend] buscando usuario: {email}")
-        user = Usuario.query.filter_by(email=email).first()
-        print(f"[resend] user={user}")
-        if user and not user.email_verified:
-            print(f"[resend] generando token")
+    user = Usuario.query.filter_by(email=email).first()
+    if user and not user.email_verified:
+        try:
             token = generar_token(user.email)
             user.verification_token = token
             db.session.commit()
-            print(f"[resend] enviando email")
             enviar_verificacion_email(user, token)
-            print(f"[resend] email enviado")
-    except Exception as e:
-        current_app.logger.error("Error resend: %s", traceback.format_exc())
-        print(f"[resend] EXCEPTION: {e}")
+        except Exception as e:
+            current_app.logger.error("Error resend: %s", traceback.format_exc())
 
     flash("Si el email existe y no está verificado, recibirás un nuevo enlace.", "success")
     return redirect(url_for("auth.login"))
