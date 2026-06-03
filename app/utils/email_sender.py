@@ -8,7 +8,7 @@ def enviar_email(destinatario, asunto, cuerpo_html):
     mail_port = current_app.config.get("MAIL_PORT", 587)
     mail_user = current_app.config.get("MAIL_USERNAME")
     mail_pass = current_app.config.get("MAIL_PASSWORD")
-    mail_from = current_app.config.get("MAIL_FROM", mail_user)
+    mail_from = current_app.config.get("MAIL_FROM") or mail_user
 
     if not mail_server or not mail_user or not mail_pass:
         current_app.logger.warning(
