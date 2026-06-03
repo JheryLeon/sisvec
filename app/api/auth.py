@@ -6,7 +6,7 @@ from werkzeug.utils import secure_filename
 
 from app.models import Usuario, UserSession
 from app.forms import LoginForm, RegisterForm, ForgotPasswordForm, ResetPasswordForm
-from app import db, limiter, csrf
+from app import db, limiter
 from app.utils.tokens import generar_token, verificar_token
 from app.utils.email_sender import enviar_verificacion_email, enviar_reset_password_email
 
@@ -216,18 +216,25 @@ def reset_password(token):
 
 
 @auth_bp.route("/resend-verification", methods=["GET", "POST"])
-@csrf.exempt
 @limiter.limit("3 per minute")
 def resend_verification():
     if request.method == "GET":
         return redirect(url_for("auth.login"))
 
     try:
-        email = request.form.get("email", "").strip().lower()
-        if not email:
-            flash("Email requerido.", "error")
+        from flask_wtf import FlaskForm
+        from wtforms import StringField
+        from wtforms.validators import DataRequired
+
+        class _ResendForm(FlaskForm):
+            email = StringField("Email", validators=[DataRequired()])
+
+        form = _ResendForm()
+        if not form.validate_on_submit():
+            flash("Solicitud invalida. Intenta de nuevo.", "error")
             return redirect(url_for("auth.login"))
 
+        email = form.email.data.strip().lower()
         user = Usuario.query.filter_by(email=email).first()
         if user and not user.email_verified:
             token = generar_token(user.email)
