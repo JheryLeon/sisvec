@@ -257,19 +257,42 @@ def test_email():
     if not current_user.es_admin():
         return jsonify({"error": "Solo admin"}), 403
 
-    from app.utils.email_sender import enviar_email
-    success = enviar_email(current_user.email, "Test SISVEC", "<h2>Correo de prueba</h2><p>Si ves esto, el email funciona.</p>")
+    import smtplib, traceback
+    from email.mime.text import MIMEText
+
+    mail_server = current_app.config.get("MAIL_SERVER")
+    mail_port = current_app.config.get("MAIL_PORT", 587)
+    mail_user = current_app.config.get("MAIL_USERNAME")
+    mail_pass = current_app.config.get("MAIL_PASSWORD")
+    mail_from = current_app.config.get("MAIL_FROM") or mail_user
 
     config_info = {
-        "MAIL_SERVER": current_app.config.get("MAIL_SERVER"),
-        "MAIL_PORT": current_app.config.get("MAIL_PORT"),
-        "MAIL_USERNAME": current_app.config.get("MAIL_USERNAME"),
-        "MAIL_FROM": current_app.config.get("MAIL_FROM"),
-        "MAIL_PASSWORD_SET": bool(current_app.config.get("MAIL_PASSWORD")),
+        "MAIL_SERVER": mail_server,
+        "MAIL_PORT": mail_port,
+        "MAIL_USERNAME": mail_user,
+        "MAIL_FROM": mail_from,
+        "MAIL_PASSWORD_SET": bool(mail_pass),
         "APP_URL": current_app.config.get("APP_URL"),
     }
 
-    return jsonify({"success": success, "config": config_info})
+    if not mail_server or not mail_user or not mail_pass:
+        return jsonify({"success": False, "error": "MAIL_* no configurado", "config": config_info})
+
+    try:
+        msg = MIMEText("<h2>Correo de prueba</h2><p>Si ves esto, el email funciona.</p>", "html")
+        msg["Subject"] = "Test SISVEC"
+        msg["From"] = mail_from
+        msg["To"] = current_user.email
+
+        with smtplib.SMTP(mail_server, mail_port, timeout=15) as server:
+            server.set_debuglevel(1)
+            server.starttls()
+            server.login(mail_user, mail_pass)
+            server.sendmail(mail_from, [current_user.email], msg.as_string())
+        return jsonify({"success": True, "config": config_info})
+    except Exception as e:
+        tb = traceback.format_exc()
+        return jsonify({"success": False, "error": str(e), "traceback": tb, "config": config_info})
 
 
 @auth_bp.route("/api/usuario", methods=["GET"])
