@@ -1,6 +1,6 @@
 from flask import Blueprint, request, jsonify, render_template, redirect, url_for, flash
 from flask_login import login_required, current_user
-from app.models import Usuario, Incidente
+from app.models import Usuario, Incidente, Rol
 from app import db
 from app.utils.security import admin_required
 
@@ -35,7 +35,11 @@ def cambiar_rol(id):
         flash("No puedes cambiar tu propio rol.", "error")
         return redirect(url_for("usuarios.admin_panel"))
 
-    usuario.rol = nuevo_rol
+    rol_obj = Rol.query.filter_by(nombre=nuevo_rol).first()
+    if not rol_obj:
+        flash("Rol no encontrado.", "error")
+        return redirect(url_for("usuarios.admin_panel"))
+    usuario.rol_id = rol_obj.id
     db.session.commit()
     flash(f"Rol de {usuario.nombre} cambiado a {nuevo_rol}.", "success")
     return redirect(url_for("usuarios.admin_panel"))
