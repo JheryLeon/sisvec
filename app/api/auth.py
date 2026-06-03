@@ -31,13 +31,12 @@ def login():
                 return render_template("login.html", form=form)
 
             if not user.email_verified:
-                session["unverified_email"] = email
                 flash(
                     "Debés verificar tu email antes de iniciar sesión. "
                     "Revisá tu bandeja de entrada (y spam).",
                     "warning",
                 )
-                return render_template("login.html", form=form)
+                return render_template("login.html", form=form, unverified_email=email)
 
             # -- Session limit: remove oldest if at limit (max 2) --
             active_sessions = UserSession.query.filter_by(user_id=user.id).order_by(UserSession.last_activity.asc()).all()
@@ -217,26 +216,23 @@ def reset_password(token):
 
 
 @auth_bp.route("/resend-verification", methods=["GET"])
-@limiter.limit("3 per minute")
 def resend_verification():
-    email = session.pop("unverified_email", None)
+    email = request.args.get("email", "").strip().lower()
     if not email:
-        flash("No hay solicitud pendiente de verificación.", "info")
+        flash("Email requerido.", "error")
         return redirect(url_for("auth.login"))
 
-    try:
-        user = Usuario.query.filter_by(email=email).first()
-        if user and not user.email_verified:
+    user = Usuario.query.filter_by(email=email).first()
+    if user and not user.email_verified:
+        try:
             token = generar_token(user.email)
             user.verification_token = token
             db.session.commit()
             enviar_verificacion_email(user, token)
+        except Exception as e:
+            current_app.logger.error("Error resend: %s", traceback.format_exc())
 
-        flash("Si el email existe y no está verificado, recibirás un nuevo enlace.", "success")
-    except Exception as e:
-        current_app.logger.error("Error en resend-verification: %s", traceback.format_exc())
-        flash(f"Error interno: {e}", "error")
-
+    flash("Si el email existe y no está verificado, recibirás un nuevo enlace.", "success")
     return redirect(url_for("auth.login"))
 
 
