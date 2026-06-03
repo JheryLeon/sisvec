@@ -215,9 +215,12 @@ def reset_password(token):
     return render_template("reset_password.html", form=form)
 
 
-@auth_bp.route("/resend-verification", methods=["POST"])
+@auth_bp.route("/resend-verification", methods=["GET", "POST"])
 @limiter.limit("3 per minute")
 def resend_verification():
+    if request.method == "GET":
+        return redirect(url_for("auth.login"))
+
     email = request.form.get("email", "").strip().lower()
     user = Usuario.query.filter_by(email=email).first()
     if user and not user.email_verified:
