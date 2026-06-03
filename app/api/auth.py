@@ -215,22 +215,35 @@ def reset_password(token):
     return render_template("reset_password.html", form=form)
 
 
+@auth_bp.route("/ping")
+def ping():
+    return "pong"
+
+
 @auth_bp.route("/resend-verification", methods=["GET"])
 def resend_verification():
+    print("[resend] INICIO")
     email = request.args.get("email", "").strip().lower()
+    print(f"[resend] email={email}")
     if not email:
         flash("Email requerido.", "error")
         return redirect(url_for("auth.login"))
 
-    user = Usuario.query.filter_by(email=email).first()
-    if user and not user.email_verified:
-        try:
+    try:
+        print(f"[resend] buscando usuario: {email}")
+        user = Usuario.query.filter_by(email=email).first()
+        print(f"[resend] user={user}")
+        if user and not user.email_verified:
+            print(f"[resend] generando token")
             token = generar_token(user.email)
             user.verification_token = token
             db.session.commit()
+            print(f"[resend] enviando email")
             enviar_verificacion_email(user, token)
-        except Exception as e:
-            current_app.logger.error("Error resend: %s", traceback.format_exc())
+            print(f"[resend] email enviado")
+    except Exception as e:
+        current_app.logger.error("Error resend: %s", traceback.format_exc())
+        print(f"[resend] EXCEPTION: {e}")
 
     flash("Si el email existe y no está verificado, recibirás un nuevo enlace.", "success")
     return redirect(url_for("auth.login"))
