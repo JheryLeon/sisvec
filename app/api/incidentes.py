@@ -197,8 +197,8 @@ def api_listar_incidentes():
 @login_required
 def api_marcar_resuelto(id):
     incidente = Incidente.query.get_or_404(id)
-    if not (current_user.es_admin() or current_user.es_junta() or incidente.reportado_por == current_user.id):
-        return jsonify({"error": "No autorizado"}), 403
+    if not (current_user.es_admin() or current_user.es_junta()):
+        return jsonify({"error": "Solo admin o junta pueden marcar como resuelto"}), 403
     incidente.resuelto = True
     incidente.resuelto_por = current_user.id
     incidente.fecha_resolucion = datetime.now(timezone.utc)
