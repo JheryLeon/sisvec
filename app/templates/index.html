@@ -352,15 +352,15 @@ document.addEventListener('DOMContentLoaded',function(){
   document.querySelectorAll('.fade-up').forEach(function(el){obs.observe(el)});
 
   // Stats from API
-  fetch('/incidentes/api/stats/resumen').then(function(r){return r.json()}).then(function(d){animateNum('sInc',d.total_30d)}).catch(function(){document.getElementById('sInc').textContent='--'});
-  fetch('/predicciones/api/riesgo-actual').then(function(r){return r.json()}).then(function(d){animateNum('sPred',d.zonas_altas+(d.zonas_medias||0))}).catch(function(){});
-  fetch('/auth/api/check').then(function(r){return r.json()}).then(function(d){
-    // just ignore, statUsuarios stays simulated
-  }).catch(function(){});
-  animateNum('sUsr',Math.floor(120+Math.random()*80));
-  document.getElementById('todayCount').textContent=Math.floor(8+Math.random()*15);
-  document.getElementById('topType').textContent=['Robo','Sospechoso','Vandalismo'][Math.floor(Math.random()*3)];
-  document.getElementById('lastIncTime').textContent='Hace '+Math.floor(5+Math.random()*60)+' min';
+  fetch('/incidentes/api/stats/dashboard').then(function(r){return r.json()}).then(function(d){
+    animateNum('sInc',d.total_incidentes);
+    animateNum('sUsr',d.total_vecinos);
+    animateNum('sPred',d.total_alertas);
+  }).catch(function(){
+    document.getElementById('sInc').textContent='--';
+    document.getElementById('sUsr').textContent='--';
+    document.getElementById('sPred').textContent='--';
+  });
 
   // Activity ticker
   for(var i=0;i<5;i++)setTimeout(function(){addAct()},i*600);

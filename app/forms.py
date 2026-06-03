@@ -4,7 +4,7 @@ from wtforms import (
     StringField, PasswordField, SelectField, TextAreaField,
     FloatField, BooleanField, DateTimeLocalField, SubmitField,
 )
-from wtforms.validators import DataRequired, Length, Optional, NumberRange
+from wtforms.validators import DataRequired, Length, Optional, NumberRange, Regexp
 from app.models import TipoIncidente, TipoAlerta, Barrio
 
 
@@ -19,7 +19,7 @@ class RegisterForm(FlaskForm):
     email = StringField("Email", validators=[DataRequired(), Length(max=255)], render_kw={"placeholder": "tu@email.com"})
     password = PasswordField("Contraseña", validators=[DataRequired(), Length(min=6, max=128)], render_kw={"placeholder": "Mínimo 6 caracteres"})
     confirm_password = PasswordField("Confirmar Contraseña", validators=[DataRequired()], render_kw={"placeholder": "Repite la contraseña"})
-    telefono = StringField("Teléfono", validators=[Optional(), Length(max=20)], render_kw={"placeholder": "Ej: +591 71234567"})
+    telefono = StringField("Teléfono", validators=[Optional(), Length(max=20), Regexp(r"^[\+\d\s\-]+$", message="Solo se permiten números, +, espacios y guiones")], render_kw={"placeholder": "Ej: +591 71234567"})
     barrio_id = SelectField("Barrio", validators=[DataRequired()], coerce=int)
     foto = FileField("Foto de Perfil", validators=[Optional(), FileAllowed(["jpg", "jpeg", "png", "gif"], "Solo imágenes (jpg, png, gif)")])
     submit = SubmitField("Crear Cuenta")
@@ -65,7 +65,7 @@ class AlertaForm(FlaskForm):
 class PerfilForm(FlaskForm):
     nombre = StringField("Nombre Completo", validators=[DataRequired(), Length(min=2, max=100)], render_kw={"placeholder": "Tu nombre"})
     email = StringField("Email", validators=[DataRequired(), Length(max=255)], render_kw={"placeholder": "tu@email.com"})
-    telefono = StringField("Teléfono", validators=[Optional(), Length(max=20)], render_kw={"placeholder": "Ej: +591 71234567"})
+    telefono = StringField("Teléfono", validators=[Optional(), Length(max=20), Regexp(r"^[\+\d\s\-]+$", message="Solo se permiten números, +, espacios y guiones")], render_kw={"placeholder": "Ej: +591 71234567"})
     barrio_id = SelectField("Barrio", validators=[DataRequired()], coerce=int)
     foto = FileField("Cambiar Foto", validators=[Optional(), FileAllowed(["jpg", "jpeg", "png", "gif"], "Solo imágenes")])
     password = PasswordField("Nueva Contraseña (opcional)", validators=[Optional(), Length(min=6, max=128)], render_kw={"placeholder": "Dejar vacío para mantener"})

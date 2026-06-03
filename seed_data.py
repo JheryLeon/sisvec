@@ -23,7 +23,7 @@ with app.app_context():
     barrios = [bcentro, bnorte, bsur, beste, boeste]
     db.session.add_all(barrios); db.session.flush()
 
-    admin = Usuario(email='admin@sisvec.com', nombre='Administrador', rol_id=r_admin, barrio_id=bcentro.id, activo=True, telefono='555-0001')
+    admin = Usuario(email='admin@ejemplo.com', nombre='Administrador', rol_id=r_admin, barrio_id=bcentro.id, activo=True, telefono='555-0001')
     admin.set_password('admin123'); db.session.add(admin)
     v1 = Usuario(email='vecino1@gmail.com', nombre='Juan Perez', rol_id=r_vecino, barrio_id=bnorte.id, activo=True, telefono='555-0002')
     v1.set_password('vecino123'); db.session.add(v1)

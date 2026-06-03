@@ -199,13 +199,21 @@ def api_marcar_resuelto(id):
     incidente = Incidente.query.get_or_404(id)
     if not (current_user.es_admin() or current_user.es_junta()):
         return jsonify({"error": "Solo admin o junta pueden marcar como resuelto"}), 403
-    incidente.resuelto = True
-    incidente.resuelto_por = current_user.id
-    incidente.fecha_resolucion = datetime.now(timezone.utc)
+    data = request.get_json(silent=True) or {}
+    resolver = data.get("resuelto", True)
+    if resolver:
+        incidente.resuelto = True
+        incidente.resuelto_por = current_user.id
+        incidente.fecha_resolucion = datetime.now(timezone.utc)
+    else:
+        incidente.resuelto = False
+        incidente.resuelto_por = None
+        incidente.fecha_resolucion = None
     db.session.commit()
     if request.content_type and "application/json" in request.content_type:
         return jsonify({"success": True, "incidente": incidente.to_dict()})
-    flash("Incidente marcado como resuelto.", "success")
+    accion = "resuelto" if resolver else "reactivado"
+    flash(f"Incidente {accion}.", "success")
     return redirect(url_for("incidentes.detalle", id=incidente.id))
 
 

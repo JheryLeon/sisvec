@@ -39,9 +39,10 @@
             <option value="8760" selected>1 a&ntilde;o</option>
         </select>
         <select id="filtroEstado" class="form-select form-select-sm mapa-filtro" style="width:auto;min-width:90px;">
-            <option value="false">Activos</option>
-            <option value="true">Resueltos</option>
+            <option value="verified">Verificados</option>
             <option value="all">Todos</option>
+            <option value="true">Resueltos</option>
+            <option value="unverified">No verificados</option>
         </select>
     </div>
 </div>
@@ -233,7 +234,14 @@ function cargarIncidentes() {
     var params = [];
     if (tipo) params.push('tipo=' + tipo);
     params.push('horas=' + horas);
-    if (estado !== 'all') params.push('resueltos=' + estado);
+    if (estado === 'verified') {
+        params.push('verificado=true');
+        params.push('resueltos=false');
+    } else if (estado === 'unverified') {
+        params.push('verificado=false');
+    } else if (estado === 'true') {
+        params.push('resueltos=true');
+    }
     if (params.length) url += '?' + params.join('&');
 
     // Remove clusterGroup from map, then clear and rebuild
@@ -280,7 +288,13 @@ function cargarHeatmap() {
     var horas = document.getElementById('filtroTiempo').value;
     var estado = document.getElementById('filtroEstado').value;
     var url = '/mapa/api/heatmap?horas=' + horas;
-    if (estado !== 'all') url += '&resueltos=' + estado;
+    if (estado === 'verified') {
+        url += '&verificado=true&resueltos=false';
+    } else if (estado === 'unverified') {
+        url += '&verificado=false';
+    } else if (estado === 'true') {
+        url += '&resueltos=true';
+    }
     fetch(url)
         .then(r => r.json())
         .then(data => {

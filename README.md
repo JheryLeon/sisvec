@@ -141,7 +141,7 @@ Render es un hosting gratuito que incluye PostgreSQL. El plan gratis suspende el
 | `FLASK_APP` | `wsgi.py` |
 | `FLASK_ENV` | `production` |
 | `SECRET_KEY` | Una clave aleatoria segura (ej: `python -c "import secrets; print(secrets.token_hex(24))"`) |
-| `APP_URL` | `https://sisvec.onrender.com` (o tu dominio personalizado) |
+| `APP_URL` | `https://tu-app.onrender.com` (o tu dominio personalizado) |
 | `ADMIN_PASSWORD` | Password para el admin del sistema (default en codigo: admin123) |
 | `FLASK_DEBUG` | `0` |
 
@@ -150,7 +150,7 @@ Render es un hosting gratuito que incluye PostgreSQL. El plan gratis suspende el
 | Variable | Valor |
 |----------|-------|
 | `SENDGRID_API_KEY` | Tu API Key de SendGrid (empieza con `SG.`) |
-| `MAIL_FROM` | `leoncarballo354@gmail.com` (o el correo que verificaste en SendGrid) |
+| `MAIL_FROM` | `tucorreo@gmail.com` (o el correo que verificaste en SendGrid) |
 
 Las variables viejas de SMTP (`MAIL_PASSWORD`, `MAIL_USERNAME`, `MAIL_SERVER`, `MAIL_PORT`) ya no son necesarias si usas SendGrid.
 
@@ -170,9 +170,9 @@ Las variables viejas de SMTP (`MAIL_PASSWORD`, `MAIL_USERNAME`, `MAIL_SERVER`, `
 ### 5. Verificar deploy
 
 - Esperar a que Render termine el build (2-3 min, ver logs)
-- Entrar a `https://sisvec.onrender.com`
-- Login como admin: `admin@sisvec.com` / password que pusiste en `ADMIN_PASSWORD`
-- Probar email: `https://sisvec.onrender.com/auth/test-email`
+- Entrar a `https://tu-app.onrender.com`
+- Login como admin: `admin@ejemplo.com` / password que pusiste en `ADMIN_PASSWORD`
+- Probar email: `https://tu-app.onrender.com/auth/test-email`
 
 ---
 
@@ -180,7 +180,7 @@ Las variables viejas de SMTP (`MAIL_PASSWORD`, `MAIL_USERNAME`, `MAIL_SERVER`, `
 
 | Usuario | Contrasena | Rol |
 |---------|-----------|-----|
-| admin@sisvec.com | admin123 | Administrador |
+| admin@ejemplo.com | admin123 | Administrador |
 | junta@sisvec.com | junta123 | Junta Vecinal |
 | vecino1@email.com | vecino123 | Vecino |
 | vecino2@email.com | vecino123 | Vecino |

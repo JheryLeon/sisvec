@@ -9,7 +9,7 @@ import os, sys
 
 # Forzar FLASK_ENV=production para que wsgi.py lo tome
 os.environ.setdefault("FLASK_ENV", "production")
-os.environ.setdefault("APP_URL", "https://sisvec.onrender.com")
+os.environ.setdefault("APP_URL", "https://tu-app.onrender.com")
 
 # Importar app
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -95,13 +95,13 @@ with app.app_context():
         print("[bootstrap] Tipos de alerta creados")
 
     # ── 3. Admin por defecto ──
-    admin = Usuario.query.filter_by(email="admin@sisvec.com").first()
+    admin = Usuario.query.filter_by(email="admin@ejemplo.com").first()
     if not admin:
         admin_pass = os.environ.get("ADMIN_PASSWORD", "admin123")
         rol_admin = Rol.query.filter_by(nombre="admin").first()
         barrio = Barrio.query.first()
         admin = Usuario(
-            email="admin@sisvec.com",
+            email="admin@ejemplo.com",
             nombre="Administrador",
             rol_id=rol_admin.id if rol_admin else 1,
             barrio_id=barrio.id if barrio else None,

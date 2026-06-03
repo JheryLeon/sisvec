@@ -18,6 +18,7 @@ def api_incidentes_recientes():
     limite = request.args.get("limite", 500, type=int)
     tipo = request.args.get("tipo")
     filtro_resueltos = request.args.get("resueltos")
+    filtro_verificado = request.args.get("verificado")
 
     query = Incidente.query.join(TipoIncidente)
 
@@ -29,6 +30,11 @@ def api_incidentes_recientes():
         query = query.filter(Incidente.resuelto == True)
     elif filtro_resueltos == "false":
         query = query.filter(Incidente.resuelto == False)
+
+    if filtro_verificado == "true":
+        query = query.filter(Incidente.verificado == True)
+    elif filtro_verificado == "false":
+        query = query.filter(Incidente.verificado == False)
 
     if tipo:
         query = query.filter(TipoIncidente.nombre == tipo)
@@ -47,6 +53,7 @@ def api_incidentes_recientes():
 def api_heatmap():
     horas = request.args.get("horas", 8760, type=int)
     filtro_resueltos = request.args.get("resueltos")
+    filtro_verificado = request.args.get("verificado")
 
     q = Incidente.query
 
@@ -58,6 +65,11 @@ def api_heatmap():
         q = q.filter(Incidente.resuelto == True)
     elif filtro_resueltos == "false":
         q = q.filter(Incidente.resuelto == False)
+
+    if filtro_verificado == "true":
+        q = q.filter(Incidente.verificado == True)
+    elif filtro_verificado == "false":
+        q = q.filter(Incidente.verificado == False)
 
     incidentes = q.all()
 
