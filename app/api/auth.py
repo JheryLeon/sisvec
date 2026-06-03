@@ -6,7 +6,7 @@ from werkzeug.utils import secure_filename
 
 from app.models import Usuario, UserSession
 from app.forms import LoginForm, RegisterForm, ForgotPasswordForm, ResetPasswordForm
-from app import db, limiter
+from app import db, limiter, csrf
 from app.utils.tokens import generar_token, verificar_token
 from app.utils.email_sender import enviar_verificacion_email, enviar_reset_password_email
 
@@ -217,19 +217,29 @@ def reset_password(token):
 
 @auth_bp.route("/resend-verification", methods=["GET", "POST"])
 @limiter.limit("3 per minute")
+@csrf.exempt
 def resend_verification():
     if request.method == "GET":
         return redirect(url_for("auth.login"))
 
-    email = request.form.get("email", "").strip().lower()
-    user = Usuario.query.filter_by(email=email).first()
-    if user and not user.email_verified:
-        token = generar_token(user.email)
-        user.verification_token = token
-        db.session.commit()
-        enviar_verificacion_email(user, token)
+    try:
+        email = request.form.get("email", "").strip().lower()
+        if not email:
+            flash("Email requerido.", "error")
+            return redirect(url_for("auth.login"))
 
-    flash("Si el email existe y no está verificado, recibirás un nuevo enlace.", "success")
+        user = Usuario.query.filter_by(email=email).first()
+        if user and not user.email_verified:
+            token = generar_token(user.email)
+            user.verification_token = token
+            db.session.commit()
+            enviar_verificacion_email(user, token)
+
+        flash("Si el email existe y no está verificado, recibirás un nuevo enlace.", "success")
+    except Exception as e:
+        current_app.logger.error("Error en resend-verification: %s", traceback.format_exc())
+        flash(f"Error interno: {e}", "error")
+
     return redirect(url_for("auth.login"))
 
 
