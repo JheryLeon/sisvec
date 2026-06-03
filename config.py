@@ -40,6 +40,7 @@ class Config:
     MAIL_USERNAME = os.environ.get("MAIL_USERNAME")
     MAIL_PASSWORD = os.environ.get("MAIL_PASSWORD")
     MAIL_FROM = os.environ.get("MAIL_FROM")
+    SENDGRID_API_KEY = os.environ.get("SENDGRID_API_KEY")
     APP_URL = os.environ.get("APP_URL", "http://localhost:5000")
 
 

@@ -257,43 +257,42 @@ def test_email():
     if not current_user.es_admin():
         return jsonify({"error": "Solo admin"}), 403
 
-    import smtplib, traceback
-    from email.mime.text import MIMEText
+    import traceback
 
-    mail_server = current_app.config.get("MAIL_SERVER")
-    mail_port = current_app.config.get("MAIL_PORT", 587)
-    mail_user = current_app.config.get("MAIL_USERNAME")
-    mail_pass = current_app.config.get("MAIL_PASSWORD")
-    mail_from = current_app.config.get("MAIL_FROM") or mail_user
+    mail_from = current_app.config.get("MAIL_FROM") or current_app.config.get("MAIL_USERNAME")
+    api_key = current_app.config.get("SENDGRID_API_KEY")
 
     config_info = {
-        "MAIL_SERVER": mail_server,
-        "MAIL_PORT": mail_port,
-        "MAIL_USERNAME": mail_user,
+        "MAIL_SERVER": current_app.config.get("MAIL_SERVER"),
+        "MAIL_PORT": current_app.config.get("MAIL_PORT"),
+        "MAIL_USERNAME": current_app.config.get("MAIL_USERNAME"),
         "MAIL_FROM": mail_from,
-        "MAIL_PASSWORD_SET": bool(mail_pass),
+        "MAIL_PASSWORD_SET": bool(current_app.config.get("MAIL_PASSWORD")),
+        "SENDGRID_API_KEY_SET": bool(api_key),
         "APP_URL": current_app.config.get("APP_URL"),
+        "SENDGRID_ENABLED": bool(api_key),
     }
 
-    if not mail_server or not mail_user or not mail_pass:
-        return jsonify({"success": False, "error": "MAIL_* no configurado", "config": config_info})
+    if not api_key:
+        return jsonify({
+            "success": False,
+            "error": "SENDGRID_API_KEY no configurada en Render Dashboard",
+            "config": config_info
+        })
 
     try:
-        msg = MIMEText("<h2>Correo de prueba</h2><p>Si ves esto, el email funciona.</p>", "html")
-        msg["Subject"] = "Test SISVEC"
-        msg["From"] = mail_from
-        msg["To"] = current_user.email
-
-        if mail_port == 465:
-            server = smtplib.SMTP_SSL(mail_server, mail_port, timeout=15)
+        from app.utils.sendgrid_sender import enviar_email_sendgrid
+        ok = enviar_email_sendgrid(
+            current_user.email,
+            "Test SISVEC",
+            "<h2>Correo de prueba</h2><p>Si ves esto, el email funciona.</p>",
+            api_key,
+            mail_from
+        )
+        if ok:
+            return jsonify({"success": True, "config": config_info})
         else:
-            server = smtplib.SMTP(mail_server, mail_port, timeout=15)
-            server.starttls()
-        with server:
-            server.set_debuglevel(1)
-            server.login(mail_user, mail_pass)
-            server.sendmail(mail_from, [current_user.email], msg.as_string())
-        return jsonify({"success": True, "config": config_info})
+            return jsonify({"success": False, "error": "SendGrid devolvio status != 202", "config": config_info})
     except Exception as e:
         tb = traceback.format_exc()
         return jsonify({"success": False, "error": str(e), "traceback": tb, "config": config_info})

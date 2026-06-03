@@ -1,18 +1,31 @@
 import smtplib
 from email.mime.text import MIMEText
 from flask import current_app, render_template
+from app.utils.sendgrid_sender import enviar_email_sendgrid
 
 
 def enviar_email(destinatario, asunto, cuerpo_html):
+    api_key = current_app.config.get("SENDGRID_API_KEY")
+    mail_from = current_app.config.get("MAIL_FROM") or current_app.config.get("MAIL_USERNAME")
+
+    if api_key:
+        try:
+            ok = enviar_email_sendgrid(destinatario, asunto, cuerpo_html, api_key, mail_from)
+            if not ok:
+                current_app.logger.error("SendGrid devolvio error al enviar a %s", destinatario)
+            return ok
+        except Exception as e:
+            current_app.logger.error("Error SendGrid a %s: %s", destinatario, e)
+            return False
+
     mail_server = current_app.config.get("MAIL_SERVER")
     mail_port = current_app.config.get("MAIL_PORT", 587)
     mail_user = current_app.config.get("MAIL_USERNAME")
     mail_pass = current_app.config.get("MAIL_PASSWORD")
-    mail_from = current_app.config.get("MAIL_FROM") or mail_user
 
     if not mail_server or not mail_user or not mail_pass:
         current_app.logger.warning(
-            "Mail no configurado. No se pudo enviar email a %s", destinatario
+            "Mail no configurado (ni SMTP ni SendGrid). No se pudo enviar email a %s", destinatario
         )
         return False
 
