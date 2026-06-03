@@ -284,9 +284,13 @@ def test_email():
         msg["From"] = mail_from
         msg["To"] = current_user.email
 
-        with smtplib.SMTP(mail_server, mail_port, timeout=15) as server:
-            server.set_debuglevel(1)
+        if mail_port == 465:
+            server = smtplib.SMTP_SSL(mail_server, mail_port, timeout=15)
+        else:
+            server = smtplib.SMTP(mail_server, mail_port, timeout=15)
             server.starttls()
+        with server:
+            server.set_debuglevel(1)
             server.login(mail_user, mail_pass)
             server.sendmail(mail_from, [current_user.email], msg.as_string())
         return jsonify({"success": True, "config": config_info})

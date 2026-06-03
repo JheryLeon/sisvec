@@ -22,8 +22,12 @@ def enviar_email(destinatario, asunto, cuerpo_html):
     msg["To"] = destinatario
 
     try:
-        with smtplib.SMTP(mail_server, mail_port, timeout=10) as server:
+        if mail_port == 465:
+            server = smtplib.SMTP_SSL(mail_server, mail_port, timeout=10)
+        else:
+            server = smtplib.SMTP(mail_server, mail_port, timeout=10)
             server.starttls()
+        with server:
             server.login(mail_user, mail_pass)
             server.sendmail(mail_from, [destinatario], msg.as_string())
         return True
