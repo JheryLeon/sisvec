@@ -3,7 +3,7 @@ import os
 from werkzeug.utils import secure_filename
 from flask import Blueprint, request, jsonify, render_template, redirect, url_for, flash, current_app
 from flask_login import login_required, current_user
-from app.models import Incidente, Usuario, Alerta, TipoIncidente, Validacion, Evidencia, Comentario, Barrio
+from app.models import Incidente, Usuario, Alerta, TipoIncidente, Validacion, Evidencia, Comentario, Barrio, Rol
 from app.forms import IncidenteForm
 from app import db, limiter
 from app.utils.security import requiere_rol, junta_or_admin_required
@@ -295,4 +295,22 @@ def api_resumen_stats():
         "reportantes_unicos": reportantes_unicos,
         "tipos": [{"tipo": t, "count": c} for t, c in tipos_query],
         "tendencia": tendencia,
+    })
+
+
+@incidentes_bp.route("/api/stats/dashboard", methods=["GET"])
+@login_required
+def api_dashboard_stats():
+    total_incidentes = Incidente.query.count()
+    total_vecinos = Usuario.query.join(Rol).filter(Rol.nombre == "vecino").count()
+    total_alertas = Alerta.query.count()
+    alertas_no_leidas = Alerta.query.filter_by(
+        usuario_id=current_user.id, leida=False
+    ).count()
+
+    return jsonify({
+        "total_incidentes": total_incidentes,
+        "total_vecinos": total_vecinos,
+        "total_alertas": total_alertas,
+        "alertas_no_leidas": alertas_no_leidas,
     })

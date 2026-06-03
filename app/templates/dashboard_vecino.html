@@ -391,12 +391,12 @@
     </div>
 
     <div class="v-stats">
-        <div class="v-stat fade-slide">
+        <div class="v-stat fade-slide" id="v-stat-reportes">
             <div class="v-icon" style="color:var(--sidebar-accent);"><i class="bi bi-shield-check"></i></div>
             <div class="v-num" data-n="{{ total_incidentes }}">0</div>
             <div class="v-lbl">Reportes (30d)</div>
         </div>
-        <div class="v-stat fade-slide">
+        <div class="v-stat fade-slide" id="v-stat-alertas">
             <div class="v-icon" style="color:#ffe066;"><i class="bi bi-bell"></i></div>
             <div class="v-num">{{ alertas_no_leidas }}</div>
             <div class="v-lbl">Alertas pendientes</div>
@@ -534,6 +534,16 @@ document.addEventListener('DOMContentLoaded', function() {
             }, 20);
         }
     });
+
+    function actualizarStats() {
+        fetch('/incidentes/api/stats/dashboard').then(function(r) { return r.json(); }).then(function(d) {
+            var rep = document.querySelector('#v-stat-reportes .v-num');
+            var alt = document.querySelector('#v-stat-alertas .v-num');
+            if (rep) rep.textContent = d.total_incidentes;
+            if (alt) alt.textContent = d.alertas_no_leidas;
+        }).catch(function(e) { console.log('Stats poll error', e); });
+    }
+    setInterval(actualizarStats, 30000);
 
     var lb7 = lb.slice(-7);
     var dv7 = dv.slice(-7);

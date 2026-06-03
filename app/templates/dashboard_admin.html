@@ -386,25 +386,25 @@
     </div>
 
     <div class="stat-grid-4">
-        <div class="stat-tile fade-up">
+        <div class="stat-tile fade-up" id="tile-incidentes">
             <div class="tile-glow" style="background:var(--sidebar-accent);"></div>
             <div class="tile-icon" style="color:var(--sidebar-accent);"><i class="bi bi-exclamation-triangle"></i></div>
             <div class="tile-num" data-count="{{ total_incidentes }}">0</div>
-            <div class="tile-label">Incidentes (30 días)</div>
+            <div class="tile-label">Incidentes</div>
         </div>
-        <div class="stat-tile fade-up">
-            <div class="tile-glow" style="background:#ff6b6b;"></div>
-            <div class="tile-icon" style="color:#ff6b6b;"><i class="bi bi-fire"></i></div>
-            <div class="tile-num" data-count="{{ altos_30d }}">0</div>
-            <div class="tile-label">Riesgo Alto</div>
-        </div>
-        <div class="stat-tile fade-up">
+        <div class="stat-tile fade-up" id="tile-vecinos">
             <div class="tile-glow" style="background:#ffe066;"></div>
             <div class="tile-icon" style="color:#ffe066;"><i class="bi bi-people"></i></div>
-            <div class="tile-num" data-count="{{ reportantes_unicos }}">0</div>
-            <div class="tile-label">Vecinos Reportando</div>
+            <div class="tile-num" data-count="{{ total_usuarios }}">0</div>
+            <div class="tile-label">Vecinos</div>
         </div>
-        <div class="stat-tile fade-up">
+        <div class="stat-tile fade-up" id="tile-alertas">
+            <div class="tile-glow" style="background:#ff6b6b;"></div>
+            <div class="tile-icon" style="color:#ff6b6b;"><i class="bi bi-bell"></i></div>
+            <div class="tile-num" data-count="{{ alertas_no_leidas }}">0</div>
+            <div class="tile-label">Alertas pendientes</div>
+        </div>
+        <div class="stat-tile fade-up" id="tile-zonas">
             <div class="tile-glow" style="background:#4fc3f7;"></div>
             <div class="tile-icon" style="color:#4fc3f7;"><i class="bi bi-geo-alt"></i></div>
             <div class="tile-num" data-count="{{ riesgo_actual.zonas_altas }}">0</div>
@@ -593,6 +593,18 @@ document.addEventListener('DOMContentLoaded', function() {
     setTimeout(function() {
         document.querySelectorAll('.bar-fill').forEach(function(b) { b.style.width = b.dataset.pct + '%'; });
     }, 400);
+
+    function actualizarStats() {
+        fetch('/incidentes/api/stats/dashboard').then(function(r) { return r.json(); }).then(function(d) {
+            var inc = document.querySelector('#tile-incidentes .tile-num');
+            var vec = document.querySelector('#tile-vecinos .tile-num');
+            var alt = document.querySelector('#tile-alertas .tile-num');
+            if (inc) inc.textContent = d.total_incidentes;
+            if (vec) vec.textContent = d.total_vecinos;
+            if (alt) alt.textContent = d.alertas_no_leidas;
+        }).catch(function(e) { console.log('Stats poll error', e); });
+    }
+    setInterval(actualizarStats, 30000);
 });
 </script>
 {% endblock %}
