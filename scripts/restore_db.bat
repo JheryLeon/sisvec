@@ -1,33 +1,54 @@
 @echo off
-setlocal
+setlocal enabledelayedexpansion
 REM RESTAURAR BD - funciona con doble clic
 REM
-REM Si tu configuracion es distinta, edita estas 4 lineas:
-set DB_HOST=localhost
-set DB_PORT=5432
-set DB_USER=postgres
-set DB_NAME=seguridad_vecinal2
+REM Intenta leer DATABASE_URL del .env primero.
+REM Si no encuentra, usa los valores por defecto de abajo.
 REM
-REM O usa el script PowerShell (restore_db.ps1) que lee automaticamente del .env
+REM set DB_HOST=localhost
+REM set DB_PORT=5432
+REM set DB_USER=postgres
+REM set DB_NAME=seguridad_vecinal2
 
 set SCRIPT_DIR=%~dp0
 set PROJECT_DIR=%SCRIPT_DIR%..
+set ENV_FILE=%PROJECT_DIR%\.env
 set INPUT_FILE=%PROJECT_DIR%\scripts\backup_seguridad_vecinal.sql
 
-REM Detectar psql (auto, cualquier version)
-set "PSQL="
-if exist "%PROGRAMFILES%\PostgreSQL\18\bin\psql.exe" (
-    set "PSQL=%PROGRAMFILES%\PostgreSQL\18\bin\psql.exe"
-) else (
-    for /d %%i in ("%PROGRAMFILES%\PostgreSQL\*") do (
-        if exist "%%i\bin\psql.exe" set "PSQL=%%i\bin\psql.exe"
+REM ---- Leer DATABASE_URL del .env (si existe) ----
+set "FOUND_DB_URL="
+if exist "%ENV_FILE%" (
+    for /f "tokens=1,* delims==" %%a in ('type "%ENV_FILE%" ^| findstr /b "DATABASE_URL"') do set "FOUND_DB_URL=%%b"
+)
+if defined FOUND_DB_URL (
+    REM postgresql://user:pass@host:port/dbname
+    for /f "tokens=1-5 delims=:/@ " %%a in ("%FOUND_DB_URL%") do (
+        set DB_USER=%%c
+        set DB_PASS=%%d
+        set DB_HOST=%%e
+        set DB_PORT=%%f
+        set DB_NAME=%%g
     )
+) else (
+    REM Valores por defecto
+    if not defined DB_HOST set DB_HOST=localhost
+    if not defined DB_PORT set DB_PORT=5432
+    if not defined DB_USER set DB_USER=postgres
+    if not defined DB_NAME set DB_NAME=seguridad_vecinal2
+)
+
+REM ---- Detectar psql (auto, cualquier version) ----
+set "PSQL="
+for /d %%i in ("%PROGRAMFILES%\PostgreSQL\*") do (
+    if exist "%%i\bin\psql.exe" set "PSQL=%%i\bin\psql.exe"
+)
+if not defined PSQL (
+    if exist "%PROGRAMFILES%\PostgreSQL\18\bin\psql.exe" set "PSQL=%PROGRAMFILES%\PostgreSQL\18\bin\psql.exe"
 )
 if not defined PSQL (
     echo ERROR: psql.exe no encontrado. Instala PostgreSQL.
     pause & exit /b 1
 )
-
 if not exist "%INPUT_FILE%" (
     echo ERROR: No se encuentra %INPUT_FILE%
     pause & exit /b 1
@@ -38,13 +59,19 @@ echo Host: %DB_HOST%:%DB_PORT%  Usuario: %DB_USER%
 echo Archivo: %INPUT_FILE%
 echo.
 
-set /P PGPASSWORD="Password del usuario %DB_USER%: "
+if not defined DB_PASS (
+    set /P DB_PASS="Password del usuario %DB_USER%: "
+)
+
+set "PGPASSWORD=%DB_PASS%"
 
 echo Paso 1/2: Eliminando conexiones activas...
 "%PSQL%" -h %DB_HOST% -p %DB_PORT% -U %DB_USER% -d postgres -c "SELECT pg_terminate_backend(pg_stat_activity.pid) FROM pg_stat_activity WHERE pg_stat_activity.datname = '%DB_NAME%' AND pid <> pg_backend_pid();" 2>nul
 
 echo Paso 2/2: Restaurando desde %INPUT_FILE%...
 "%PSQL%" -h %DB_HOST% -p %DB_PORT% -U %DB_USER% -d %DB_NAME% -f "%INPUT_FILE%"
+
+set PGPASSWORD=
 
 if %ERRORLEVEL% equ 0 (
     echo.
@@ -54,5 +81,4 @@ if %ERRORLEVEL% equ 0 (
     echo ERROR: Verifica que la BD %DB_NAME% exista.
 )
 
-set PGPASSWORD=
 pause
