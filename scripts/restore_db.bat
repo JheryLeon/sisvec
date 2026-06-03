@@ -18,24 +18,31 @@ set INPUT_FILE=%PROJECT_DIR%\scripts\backup_seguridad_vecinal.sql
 REM ---- Leer DATABASE_URL del .env (si existe) ----
 set "FOUND_DB_URL="
 if exist "%ENV_FILE%" (
-    for /f "tokens=1,* delims==" %%a in ('type "%ENV_FILE%" ^| findstr /b "DATABASE_URL"') do set "FOUND_DB_URL=%%b"
+    for /f "tokens=1,* delims==" %%a in ('type "%ENV_FILE%" ^| findstr /b "DATABASE_URL"') do (
+        set "FOUND_DB_URL=%%b"
+    )
 )
 if defined FOUND_DB_URL (
     REM postgresql://user:pass@host:port/dbname
-    for /f "tokens=1-5 delims=:/@ " %%a in ("%FOUND_DB_URL%") do (
-        set DB_USER=%%c
-        set DB_PASS=%%d
-        set DB_HOST=%%e
-        set DB_PORT=%%f
-        set DB_NAME=%%g
+    REM Tokens: 1=postgresql, 2=user, 3=pass, 4=host, 5=port, 6=dbname
+    for /f "tokens=1-6 delims=:/@ " %%a in ("!FOUND_DB_URL!") do (
+        set DB_USER=%%b
+        set DB_PASS=%%c
+        set DB_HOST=%%d
+        set DB_PORT=%%e
+        set DB_NAME=%%f
     )
 ) else (
-    REM Valores por defecto
+    REM Valores por defecto (editar aqui si no usas .env)
     if not defined DB_HOST set DB_HOST=localhost
     if not defined DB_PORT set DB_PORT=5432
     if not defined DB_USER set DB_USER=postgres
     if not defined DB_NAME set DB_NAME=seguridad_vecinal2
 )
+REM Limpiar comillas que puedan venir del .env
+set DB_USER=!DB_USER:"=!
+set DB_PASS=!DB_PASS:"=!
+set DB_NAME=!DB_NAME:"=!
 
 REM ---- Detectar psql (auto, cualquier version) ----
 set "PSQL="
@@ -65,10 +72,13 @@ if not defined DB_PASS (
 
 set "PGPASSWORD=%DB_PASS%"
 
-echo Paso 1/2: Eliminando conexiones activas...
+echo Paso 0/3: Creando BD si no existe...
+"%PSQL%" -h %DB_HOST% -p %DB_PORT% -U %DB_USER% -d postgres -c "CREATE DATABASE %DB_NAME%;" 2>nul
+
+echo Paso 1/3: Eliminando conexiones activas...
 "%PSQL%" -h %DB_HOST% -p %DB_PORT% -U %DB_USER% -d postgres -c "SELECT pg_terminate_backend(pg_stat_activity.pid) FROM pg_stat_activity WHERE pg_stat_activity.datname = '%DB_NAME%' AND pid <> pg_backend_pid();" 2>nul
 
-echo Paso 2/2: Restaurando desde %INPUT_FILE%...
+echo Paso 2/3: Restaurando desde %INPUT_FILE%...
 "%PSQL%" -h %DB_HOST% -p %DB_PORT% -U %DB_USER% -d %DB_NAME% -f "%INPUT_FILE%"
 
 set PGPASSWORD=
