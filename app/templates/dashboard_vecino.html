@@ -401,7 +401,7 @@
             <div class="v-num">{{ total_alertas }}</div>
             <div class="v-lbl">Alertas</div>
         </div>
-        <div class="v-stat fade-slide">
+        <div class="v-stat fade-slide" id="v-stat-vecinos">
             <div class="v-icon" style="color:#4fc3f7;"><i class="bi bi-people"></i></div>
             <div class="v-num">{{ total_vecinos }}</div>
             <div class="v-lbl">Vecinos</div>
@@ -539,8 +539,10 @@ document.addEventListener('DOMContentLoaded', function() {
         fetch('/incidentes/api/stats/dashboard').then(function(r) { return r.json(); }).then(function(d) {
             document.querySelector('#v-stat-incidentes .v-num').textContent = d.total_incidentes;
             document.querySelector('#v-stat-alertas .v-num').textContent = d.total_alertas;
+            document.querySelector('#v-stat-vecinos .v-num').textContent = d.total_vecinos;
         }).catch(function(e) { console.log('Stats poll error', e); });
     }
+    actualizarStats();
     setInterval(actualizarStats, 30000);
 
     var lb7 = lb.slice(-7);

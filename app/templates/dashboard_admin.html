@@ -601,6 +601,7 @@ document.addEventListener('DOMContentLoaded', function() {
             document.querySelector('#tile-alertas .tile-num').textContent = d.total_alertas;
         }).catch(function(e) { console.log('Stats poll error', e); });
     }
+    actualizarStats();
     setInterval(actualizarStats, 30000);
 });
 </script>
