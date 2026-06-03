@@ -216,8 +216,8 @@ def reset_password(token):
 
 
 @auth_bp.route("/resend-verification", methods=["GET", "POST"])
-@limiter.limit("3 per minute")
 @csrf.exempt
+@limiter.limit("3 per minute")
 def resend_verification():
     if request.method == "GET":
         return redirect(url_for("auth.login"))
